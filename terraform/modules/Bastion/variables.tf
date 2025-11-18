@@ -1,25 +1,11 @@
-variable "location" {
-  type        = string
-  description = "The location/region where the UAMIs will be created"
-}
+variable "bastion_id" {}
 
-variable "resource_group_name" {
-  type        = string
-  description = "The name of the resource group"
-}
+variable "bastion_name" {}
 
-variable "tags" {
-  type        = map(string)
-  description = "A map of tags to apply to the UAMIs"
-  default     = {}
-}
+variable "bastion_rg" {}
 
-variable "acr_name" {
-  type        = string
-  description = "The name of the Azure Container Registry"
-}
-
-variable "private_dns_zone_id" {
-  type        = string
-  description = "The ID of the private DNS zone to link with the ACR"
-}
+variable "location" {}
+variable "tenant_id" {}
+variable "subscription_id" {}
+variable "Azure_Policy" {}
+variable "Azure_Policy_Require_a_tag_on_rg" {}
