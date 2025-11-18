@@ -143,7 +143,7 @@ nsg_snet = {
   }
 }
 
-enable_vnet_peering_remote = true
+enable_vnet_peering_remote = false
 
 vnet_peering_remote = {
   peering1 = {
