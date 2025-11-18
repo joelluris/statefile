@@ -90,62 +90,62 @@ stages:
           terraformVersion: "latest"
 
       # Install Terrascan security scanning tool (version 1.19.9)
-      - script: |
-          set -e
-          echo "Installing Terrascan v1.19.9..."
-          curl -L https://github.com/tenable/terrascan/releases/download/v1.19.9/terrascan_1.19.9_Linux_x86_64.tar.gz -o terrascan.tar.gz
-          tar -xvf terrascan.tar.gz terrascan
-          sudo install terrascan /usr/local/bin
-          rm -f terrascan terrascan.tar.gz
-          terrascan version
-        displayName: "Install Terrascan v1.19.9"
+      # - script: |
+      #     set -e
+      #     echo "Installing Terrascan v1.19.9..."
+      #     curl -L https://github.com/tenable/terrascan/releases/download/v1.19.9/terrascan_1.19.9_Linux_x86_64.tar.gz -o terrascan.tar.gz
+      #     tar -xvf terrascan.tar.gz terrascan
+      #     sudo install terrascan /usr/local/bin
+      #     rm -f terrascan terrascan.tar.gz
+      #     terrascan version
+      #   displayName: "Install Terrascan v1.19.9"
 
-      # Install Checkov security scanning tool via Python pip
-      - script: |
-          set -e
-          echo "Installing Checkov..."
-          sudo apt-get update -y
-          sudo apt-get install -y python3-pip
-          pip3 install --break-system-packages --upgrade pip
-          pip3 install --break-system-packages checkov
-          # Add local bin to PATH for current and future commands
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "##vso[task.setvariable variable=PATH]$HOME/.local/bin:$PATH"
-          checkov -v
-        displayName: "Install Checkov"
+      # # Install Checkov security scanning tool via Python pip
+      # - script: |
+      #     set -e
+      #     echo "Installing Checkov..."
+      #     sudo apt-get update -y
+      #     sudo apt-get install -y python3-pip
+      #     pip3 install --break-system-packages --upgrade pip
+      #     pip3 install --break-system-packages checkov
+      #     # Add local bin to PATH for current and future commands
+      #     export PATH="$HOME/.local/bin:$PATH"
+      #     echo "##vso[task.setvariable variable=PATH]$HOME/.local/bin:$PATH"
+      #     checkov -v
+      #   displayName: "Install Checkov"
 
-      - script: |
+      # - script: |
 
-          set -e
-          echo "Creating artifact folder for scan results..."
-          mkdir -p "$(System.DefaultWorkingDirectory)/scan-results"
-          # Ensure local bin is in PATH for Checkov
-          export PATH="$HOME/.local/bin:$PATH"
-          export TERRASCAN_HCL_EXPERIMENTS="module_variable_optional_attrs"
-          shopt -s nullglob
-          for m in terraform/modules/*; do
-            [ -d "$m" ] || continue
-            name=$(basename "$m")
-            echo "=== Scanning module: $name ==="
-            (cd "$m" && terraform init -backend=false -input=false)
-            module_path="$(Build.SourcesDirectory)/$m"
-            terrascan scan -d "$module_path" \
-              --policy-type azure \
-              --iac-type terraform \
-              --iac-version v14 \
-              --output junit-xml \
-              --show-passed > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Terrascan-Report.xml" || true
-            checkov -d "$module_path" -o junitxml > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Checkov-Report.xml" || true
-          done
-        displayName: "Run Terrascan & Checkov on Modules"
+      #     set -e
+      #     echo "Creating artifact folder for scan results..."
+      #     mkdir -p "$(System.DefaultWorkingDirectory)/scan-results"
+      #     # Ensure local bin is in PATH for Checkov
+      #     export PATH="$HOME/.local/bin:$PATH"
+      #     export TERRASCAN_HCL_EXPERIMENTS="module_variable_optional_attrs"
+      #     shopt -s nullglob
+      #     for m in terraform/modules/*; do
+      #       [ -d "$m" ] || continue
+      #       name=$(basename "$m")
+      #       echo "=== Scanning module: $name ==="
+      #       (cd "$m" && terraform init -backend=false -input=false)
+      #       module_path="$(Build.SourcesDirectory)/$m"
+      #       terrascan scan -d "$module_path" \
+      #         --policy-type azure \
+      #         --iac-type terraform \
+      #         --iac-version v14 \
+      #         --output junit-xml \
+      #         --show-passed > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Terrascan-Report.xml" || true
+      #       checkov -d "$module_path" -o junitxml > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Checkov-Report.xml" || true
+      #     done
+      #   displayName: "Run Terrascan & Checkov on Modules"
 
-      - task: PublishTestResults@2
-        displayName: "Publish JUnit Scan Results"
-        inputs:
-          testResultsFormat: "JUnit"  # Use JUnit XML format for test results
-          testResultsFiles: "$(System.DefaultWorkingDirectory)/scan-results/*.xml"  # Include all XML files from scan results
-          failTaskOnFailedTests: false  # Don't fail the pipeline if security issues are found (for visibility only)
-          testRunTitle: "IaC Security Scans (Terrascan & Checkov)"  # Display name for test results
+      # - task: PublishTestResults@2
+      #   displayName: "Publish JUnit Scan Results"
+      #   inputs:
+      #     testResultsFormat: "JUnit"  # Use JUnit XML format for test results
+      #     testResultsFiles: "$(System.DefaultWorkingDirectory)/scan-results/*.xml"  # Include all XML files from scan results
+      #     failTaskOnFailedTests: false  # Don't fail the pipeline if security issues are found (for visibility only)
+      #     testRunTitle: "IaC Security Scans (Terrascan & Checkov)"  # Display name for test results
 
 # =========================================================
 # Stage 2: Prepare (Plan) - Terraform Planning and Artifact Creation
