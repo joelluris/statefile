@@ -118,8 +118,9 @@ locals {
   }
 }
 
-# Fetch Shared Vnet ID
+# Fetch Shared Vnet ID (only when peering is enabled)
 data "terraform_remote_state" "tfstate_shared" {
+  count   = var.enable_vnet_peering_remote ? 1 : 0
   backend = "azurerm"  
   config = {
     resource_group_name  = var.tf_storage_resource_group
@@ -131,9 +132,9 @@ data "terraform_remote_state" "tfstate_shared" {
 }
 
 locals {
-  shared_vnet_ids = {
-    for k, v in data.terraform_remote_state.tfstate_shared.outputs.vnet_details_output : v.name => v.id
-  }
+  shared_vnet_ids = var.enable_vnet_peering_remote && length(data.terraform_remote_state.tfstate_shared) > 0 ? {
+    for k, v in data.terraform_remote_state.tfstate_shared[0].outputs.vnet_details_output : v.name => v.id
+  } : {}
 }
 resource "azurerm_virtual_network_peering" "peer_remote" {
   for_each             = var.enable_vnet_peering_remote ? var.vnet_peering_remote : {}
