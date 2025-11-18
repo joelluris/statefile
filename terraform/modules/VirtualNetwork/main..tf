@@ -125,8 +125,8 @@ data "terraform_remote_state" "tfstate_shared" {
     resource_group_name  = var.tf_storage_resource_group
     storage_account_name = var.tf_storage_account_name
     container_name       = var.tf_container_name
-    key                 = "shared.tfstate"
-    access_key          = var.tf_storage_access_key
+    key                  = "shared.tfstate"
+    use_azuread_auth     = true
   }
 }
 

@@ -408,6 +408,6 @@ routetables = {
 # }
 
 # Bastion details (from existing Bastion)
-bastion_id   = "/subscriptions/8041dff6-8186-4b97-9b32-365b16d0b28b/resourceGroups/rg-app-sec-shared-uaen-01/providers/Microsoft.Network/bastionHosts/bas-shared-uaen-01"
-bastion_name = "bas-shared-uaen-01"
-bastion_rg   = "rg-app-sec-shared-uaen-01"
+# bastion_id   = "/subscriptions/8041dff6-8186-4b97-9b32-365b16d0b28b/resourceGroups/rg-app-sec-shared-uaen-01/providers/Microsoft.Network/bastionHosts/bas-shared-uaen-01"
+# bastion_name = "bas-shared-uaen-01"
+# bastion_rg   = "rg-app-sec-shared-uaen-01"
