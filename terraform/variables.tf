@@ -121,26 +121,27 @@ variable "AzureDevopsrunner" {
   type    = list(string)
   default = []
 }
-variable "loganalytics" {
-  type = map(object({
-    name                = string
-    resource_group_name = string
-    sku                 = string
-    tags                = map(string)
-  }))
-}
 
-variable "BackupVault" {
-  description = "A map of Recovery Services Vault configurations"
-  type = map(object({
-    rsv_vault_name          = string
-    location                = string
-    rsv_resource_group_name = string
-    rsv_vault_sku           = string
-    soft_delete_enabled     = bool
-    tags                    = map(string)
-  }))
-}
+# variable "loganalytics" {
+#   type = map(object({
+#     name                = string
+#     resource_group_name = string
+#     sku                 = string
+#     tags                = map(string)
+#   }))
+# }
+
+# variable "BackupVault" {
+#   description = "A map of Recovery Services Vault configurations"
+#   type = map(object({
+#     rsv_vault_name          = string
+#     location                = string
+#     rsv_resource_group_name = string
+#     rsv_vault_sku           = string
+#     soft_delete_enabled     = bool
+#     tags                    = map(string)
+#   }))
+# }
 
 variable "enable_vnet_peering_remote" {
   description = "Flag to enable remote VNet peering (only for shared env)"

@@ -203,7 +203,7 @@ stages:
           resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"  # Resource group containing storage account
           storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"    # Storage account for Terraform state
           container_name       = "$(TF_CONTAINER_NAME)"          # Blob container for state files
-          key                  = "${{ parameters.environment }}.tfstate"  # State file name per environment
+          key                  = "lnt-eip-${{ parameters.environment }}.tfstate"  # State file name per environment
           use_azuread_auth     = true                            # Use Azure AD for authentication
           EOF
           # Re-enable command echo
@@ -409,7 +409,7 @@ stages:
                 resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
                 storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
                 container_name       = "$(TF_CONTAINER_NAME)"
-                key                  = "${{ parameters.environment }}.tfstate"
+                key                  = "lnt-eip-${{ parameters.environment }}.tfstate"
                 use_azuread_auth     = true
                 EOF
                 # Re-enable command echo
