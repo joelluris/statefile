@@ -12,7 +12,7 @@
 trigger:
   branches:
     include:
-      - feature1
+      - integrations-networking
 
 pr:
   autoCancel: true
@@ -158,13 +158,13 @@ stages:
   displayName: "Prepare Artifact for Release"
   dependsOn: Security_Scans
 
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/feature1'), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/integrations-networking'), ne(variables['Build.Reason'], 'PullRequest'))
   jobs:
   - job: Deployment
     displayName: "Terraform Deployment"
     steps:
       - checkout: self
-      - task: Bash@3
+      - task: Bash@3git 
         displayName: "Export Storage Backend Variables (no secrets)"
         inputs:
           targetType: inline
@@ -358,7 +358,7 @@ stages:
   displayName: "Terraform Apply"
   dependsOn: Prepare_Terraform_Release
   # Only run if: Plan stage succeeded AND this is main branch build AND not a PR
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/feature1'), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/integrations-networking'), ne(variables['Build.Reason'], 'PullRequest'))
   jobs:
   - deployment: ApplyDeployment
     displayName: "Apply Terraform Changes"
