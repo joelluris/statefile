@@ -1,25 +1,38 @@
-variable "location" {
-  type        = string
-  description = "The location/region where the UAMIs will be created"
+variable "location" {}
+variable "tenant_id" {}
+variable "subscription_id" {}
+variable "resource_group_output" {}
+variable "BackupVault" {
+  description = "A map of Recovery Services Vault configurations"
+  type        = map(object({
+    rsv_vault_name           = string
+    location                 = string
+    rsv_resource_group_name  = string
+    rsv_vault_sku            = string
+    soft_delete_enabled      = bool
+    tags                         = map(string)
+  }))
 }
 
-variable "resource_group_name" {
-  type        = string
-  description = "The name of the resource group"
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "A map of tags to apply to the UAMIs"
-  default     = {}
-}
-
-variable "acr_name" {
-  type        = string
-  description = "The name of the Azure Container Registry"
-}
-
-variable "private_dns_zone_id" {
-  type        = string
-  description = "The ID of the private DNS zone to link with the ACR"
+variable "BackupPolicy" {
+  description = "A map of backup policy configurations"
+  type        = map(object({
+    backup_policy_name              = string
+    rsv_resource_group_name         = string
+    rsv_vault_name                  = string
+    timezone                        = string
+    instant_restore_retention_days  = number
+    backup_frequency                = string
+    backup_time                     = string
+    retention_daily                 = number
+    retention_weekly                = number
+    retention_weekly_days           = list(string)
+    retention_monthly               = number
+    retention_monthly_week          = list(string)
+    retention_monthly_days          = list(string)
+    retention_yearly                = number
+    retention_yearly_month          = list(string)
+    retention_yearly_week           = list(string)
+    retention_yearly_days           = list(string)
+  }))
 }
