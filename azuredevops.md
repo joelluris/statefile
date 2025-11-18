@@ -463,7 +463,11 @@ git add .
 git commit -m "will use local"
 git push
 
+azure devops push branch - git push -u azure integrations-networking
+
 git push origin main && git push azure main
+
+git push origin main ; git push azure main
 ---
 
 # Azure DevOps Built-in Path Variables Reference
