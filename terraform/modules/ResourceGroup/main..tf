@@ -1,9 +1,6 @@
-resource "azurerm_container_registry" "acr" {
-  name                          = var.acr_name
-  location                      = var.location
-  resource_group_name           = var.resource_group_name
-  sku                           = "Standard"
-  admin_enabled                 = false
-  # public_network_access_enabled = false
-  tags                          = var.tags
+resource "azurerm_resource_group" "ENV_RG" {
+  for_each = can(var.all_resource_groups) ? var.all_resource_groups : {}
+  name     = each.value.name
+  location = var.location
+  tags     = each.value.tags
 }
