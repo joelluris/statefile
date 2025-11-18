@@ -255,7 +255,7 @@ stages:
       - task: AzureCLI@2
         displayName: "Terraform Init"
         inputs:
-          azureSubscription: "svc-infra-devops-global"
+          azureSubscription: "svc-enterprise-integrations"
           scriptType: "bash"
           scriptLocation: "inlineScript"
           workingDirectory: "$(Build.SourcesDirectory)/terraform"
@@ -274,7 +274,7 @@ stages:
       - task: AzureCLI@2
         displayName: "Terraform Validate"
         inputs:
-          azureSubscription: "svc-infra-devops-global"
+          azureSubscription: "svc-enterprise-integrations"
           scriptType: "bash"
           scriptLocation: "inlineScript"
           workingDirectory: "$(Build.SourcesDirectory)/terraform"
@@ -291,7 +291,7 @@ stages:
       - task: AzureCLI@2
         displayName: "Terraform Plan"
         inputs:
-          azureSubscription: "svc-infra-devops-global"
+          azureSubscription: "svc-enterprise-integrations"
           scriptType: "bash"
           scriptLocation: "inlineScript"
           workingDirectory: "$(Build.SourcesDirectory)/terraform"
@@ -419,7 +419,7 @@ stages:
             - task: AzureCLI@2
               displayName: "Terraform Init (backend storage)"
               inputs:
-                azureSubscription: "svc-infra-devops-global"
+                azureSubscription: "svc-enterprise-integrations"
                 scriptType: "bash"
                 scriptLocation: "inlineScript"
                 workingDirectory: "$(Pipeline.Workspace)/terraform-files"
@@ -437,7 +437,7 @@ stages:
             - task: AzureCLI@2
               displayName: "Terraform Show (saved plan)"
               inputs:
-                azureSubscription: "svc-infra-devops-global"
+                azureSubscription: "svc-enterprise-integrations"
                 scriptType: "bash"
                 scriptLocation: "inlineScript"
                 workingDirectory: "$(Pipeline.Workspace)/terraform-files"
@@ -457,7 +457,7 @@ stages:
             - task: AzureCLI@2
               displayName: "Terraform Apply (using saved plan)"
               inputs:
-                azureSubscription: "svc-infra-devops-global"
+                azureSubscription: "svc-enterprise-integrations"
                 scriptType: "bash"
                 scriptLocation: "inlineScript"
                 workingDirectory: "$(Pipeline.Workspace)/terraform-files"
