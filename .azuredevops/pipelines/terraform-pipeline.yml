@@ -26,6 +26,7 @@ parameters:
 - name: environment                                    # Parameter name used in code
   displayName: "Please Select Deployment Environment"  # Label shown in GUI
   type: string                                         # Data type
+  default: nonprod                                     # Default environment
   values:                                              # The dropdown options
   - dev      # ← This appears in your dropdown
   - stg
@@ -164,7 +165,7 @@ stages:
     displayName: "Terraform Deployment"
     steps:
       - checkout: self
-      - task: Bash@3git 
+      - task: Bash@3
         displayName: "Export Storage Backend Variables (no secrets)"
         inputs:
           targetType: inline
