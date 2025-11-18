@@ -1,2 +1,2 @@
-data "azurerm_client_config" "tenant" {
-}
+# data "azurerm_client_config" "tenant" {
+# }
