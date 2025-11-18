@@ -1,9 +1,9 @@
-resource "azurerm_container_registry" "acr" {
-  name                          = var.acr_name
-  location                      = var.location
-  resource_group_name           = var.resource_group_name
-  sku                           = "Standard"
-  admin_enabled                 = false
-  # public_network_access_enabled = false
-  tags                          = var.tags
+resource "azurerm_log_analytics_workspace" "law" {
+  for_each            = var.loganalytics
+  name                = each.value.name
+   location            = var.location
+  resource_group_name = each.value.resource_group_name
+  sku                 = each.value.sku
+  tags                = each.value.tags
+  depends_on = [var.resource_group_output]
 }
