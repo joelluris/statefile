@@ -1,446 +1,413 @@
-# =============================
-# Dev Environment Configuration
-# =============================
-#
-# NOTE:
-# - When running in Azure DevOps pipeline, tenant_id and subscription_id are appended automatically at runtime.
-# - When running locally, uncomment and set these values, and set backend to local in providers.tf.
-# - Comment these lines out if running in the pipeline.
-#
-# tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c" # <-- Uncomment for local use, comment for pipeline
-# subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f" # <-- Uncomment for local use, comment for pipeline
-
-# =============================
-# General Configuration
-# =============================
-project_code                 = "lnt-eip"
-environment                  = "nonprod"
-location                     = "uaenorth"
-resource_name_sequence_start = 1
-
-workloads = ["aks", "vm"]
-
-tags = {
-  Project     = "lnt-eip"
-  Environment = "nonprod"
-  ManagedBy   = "Terraform"
-  CostCenter  = "IT"
-}
-
-dns_servers = {
-  dns_servers = ["8.8.8.8"]
-}
-
-# ==================================
-# User Assigned Managed Identities
-# ==================================
-uami_names = {
-  kubelet    = "id-lnt-eip-aks-kubelet-nonprod-01"
-  kubernetes = "id-lnt-eip-aks-kubernetes-nonprod-01"
-  workload   = "id-lnt-eip-aks-workload-nonprod-01"
-}
-
-# =============================
-# VNet 1 Configuration (VM)
-# =============================
-address_space = ["10.5.0.0/20", "10.6.0.0/16"]
-
-vnet1_name = "vnet-lnt-eip-vm-nonprod-01"
-
-vnet1_subnets = {
-  vm = {
-    name                            = "snet-lnt-eip-vm-nonprod-01"
-    address_prefixes                = ["10.5.0.0/28"]
-    default_outbound_access_enabled = false
-    nsg_key                         = "vm_jumpbox"
-    delegation                      = []
-    service_endpoints_with_location = [
-      {
-        service   = "Microsoft.KeyVault"
-        locations = ["uaenorth"]
-      }
-    ]
-  },
-  # manage file transfer subnet
-  mft = {
-    name                            = "snet-lnt-eip-vm-lin-nonprod-01"
-    address_prefixes                = ["10.5.0.16/28"]
-    default_outbound_access_enabled = false
-    nsg_key                         = "vm_management"
-    delegation                      = []
-    service_endpoints_with_location = []
-  },
-  # this is for postgresql subnet
-  psql = {
-    name                            = "snet-lnt-eip-psql-nonprod-01"
-    address_prefixes                = ["10.5.0.32/28"]
-    default_outbound_access_enabled = false
-    nsg_key                         = "psql_db"
-    delegation = [
-      {
-        name = "Microsoft.DBforPostgreSQL/flexibleServers"
-        service_delegation = [
-          {
-            name    = "Microsoft.DBforPostgreSQL/flexibleServers"
-            actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
-          }
-        ]
-      }
-    ]
-    service_endpoints_with_location = [
-      {
-        service   = "Microsoft.Storage"
-        locations = ["uaenorth"]
-      }
-    ]
-  },
-
-}
-
-vnet1_nsgs = {
-  "vm_jumpbox" = {
-    name = "nsg-lnt-eip-vm-nonprod-01"
-    rules = [
-      {
-        name                       = "AllowRDP"
-        access                     = "Allow"
-        destination_address_prefix = "*"
-        destination_port_range     = "3389"
-        direction                  = "Inbound"
-        priority                   = 1000
-        protocol                   = "Tcp"
-        source_address_prefix      = "*"
-        source_port_range          = "*"
-      },
-      {
-        name                       = "AllowOutboundToAKS"
-        access                     = "Allow"
-        destination_address_prefix = "10.6.0.0/16"
-        destination_port_range     = "*"
-        direction                  = "Outbound"
-        priority                   = 100
-        protocol                   = "*"
-        source_address_prefix      = "10.5.0.0/28"
-        source_port_range          = "*"
-      }
-    ]
-  }
-  "vm_management" = {
-    name = "nsg-lnt-eip-vm-mgmt-nonprod-01"
-    rules = [
-      {
-        name                       = "AllowSSH"
-        access                     = "Allow"
-        destination_address_prefix = "*"
-        destination_port_range     = "22"
-        direction                  = "Inbound"
-        priority                   = 1001
-        protocol                   = "Tcp"
-        source_address_prefix      = "*"
-        source_port_range          = "*"
-      }
-    ]
-  }
-  "psql_db" = {
-    name = "nsg-lnt-eip-psql-nonprod-01"
-    rules = [
-      {
-        name                       = "AllowPostgreSQLFromAKS"
-        access                     = "Allow"
-        destination_address_prefix = "10.5.0.32/28"
-        destination_port_range     = "5432"
-        direction                  = "Inbound"
-        priority                   = 100
-        protocol                   = "Tcp"
-        source_address_prefix      = "10.6.0.0/16"
-        source_port_range          = "*"
-      },
-      {
-        name                       = "AllowPostgreSQLFromVM"
-        access                     = "Allow"
-        destination_address_prefix = "10.5.0.32/28"
-        destination_port_range     = "5432"
-        direction                  = "Inbound"
-        priority                   = 110
-        protocol                   = "Tcp"
-        source_address_prefix      = "10.5.0.0/28"
-        source_port_range          = "*"
-      }
-    ]
-  }
-}
-
-# =====================
-# VNet 1 Route Tables
-# =====================
-vnet1_route_tables = {
-  "firewall_routes" = {
-    name                          = "rt-lnt-eip-vm-nonprod-01"
-    disable_bgp_route_propagation = false
-    routes = [
-      {
-        name                   = "route-to-firewall"
-        address_prefix         = "0.0.0.0/0"
-        next_hop_type          = "VirtualAppliance"
-        next_hop_in_ip_address = "10.0.5.1"
-      }
-    ]
-  }
-}
-
-# =============================
-# VNet 2 Configuration (AKS)
-# =============================
-vnet2_name = "vnet-lnt-eip-aks-nonprod-01"
-
-vnet2_subnets = {
-  aks = {
-    name                            = "snet-lnt-eip-aks-nonprod-01"
-    address_prefixes                = ["10.6.0.0/24"]
-    default_outbound_access_enabled = false
-    nsg_key                         = "aks_cluster"
-    delegation                      = []
-    service_endpoints_with_location = [
-      {
-        service   = "Microsoft.ContainerRegistry"
-        locations = ["uaenorth"]
-      }
-    ]
-  },
-  node = {
-    name                            = "snet-lnt-eip-nd-nonprod-01"
-    address_prefixes                = ["10.6.2.0/23"]
-    default_outbound_access_enabled = false
-    delegation                      = []
-    service_endpoints_with_location = []
-  },
-  pod = {
-    name                            = "snet-lnt-eip-pd-nonprod-01"
-    address_prefixes                = ["10.6.16.0/20"]
-    default_outbound_access_enabled = false
-    delegation                      = []
-    service_endpoints_with_location = []
-  },
-  mft = {
-    name                            = "snet-lnt-eip-mft-nonprod-01"
-    address_prefixes                = ["10.6.32.0/28"]
-    default_outbound_access_enabled = false
-    nsg_key                         = "aks_cluster"
-    delegation                      = []
-    service_endpoints_with_location = []
-  },
-}
-
-vnet2_nsgs = {
-  "aks_cluster" = {
-    name = "nsg-lnt-eip-aks-nonprod-01"
-    rules = [
-      {
-        name                       = "AllowHTTPS"
-        access                     = "Allow"
-        destination_address_prefix = "*"
-        destination_port_range     = "443"
-        direction                  = "Inbound"
-        priority                   = 1000
-        protocol                   = "Tcp"
-        source_address_prefix      = "*"
-        source_port_range          = "*"
-      },
-      {
-        name                       = "AllowHTTP"
-        access                     = "Allow"
-        destination_address_prefix = "*"
-        destination_port_range     = "80"
-        direction                  = "Inbound"
-        priority                   = 1001
-        protocol                   = "Tcp"
-        source_address_prefix      = "*"
-        source_port_range          = "*"
-      },
-      {
-        name                       = "AllowFromJumpbox"
-        access                     = "Allow"
-        destination_address_prefix = "10.6.0.0/16"
-        destination_port_range     = "*"
-        direction                  = "Inbound"
-        priority                   = 100
-        protocol                   = "*"
-        source_address_prefix      = "10.5.0.0/28"
-        source_port_range          = "*"
-      }
-    ]
-  }
-}
-
-# ========================================
-# Azure Container Registry Configuration
-# ========================================
-acr_name = "acrlnteipnonprod01"
-
-# =============================
-# Key Vault Configuration
-# =============================
-key_vault_name           = "kv-lnt-eip-nonprod-01"
-key_vault_key_name       = "des-key-nonprod"
-disk_encryption_set_name = "des-lnt-eip-nonprod-01"
-
-# =============================
-# Hub VNet Configuration
-# =============================
-hub_vnet_name                = "vnet-hub-uaenorth"
-hub_vnet_resource_group_name = "rg-hub-uaenorth"
-
-# =============================
-# AKS Configuration
-# =============================
-aks_name                 = "aks-lnt-eip-nonprod-01"
-aks_dns_prefix           = "aks-lnt-eip-nonprod"
-aks_linux_admin_username = "azureuser"
-
-# Azure AD Admin Group Object IDs for AKS RBAC
-admin_group_object_ids = [
-  # Add your Azure AD group object IDs here
-  # Example: "12345678-1234-1234-1234-123456789012"
-]
-
-# Note: Private DNS zones are fetched from the connectivity subscription via data sources
-# See data.tf for the configuration
-
-node_pools = [
-  {
-    name                        = "unp1"
-    temporary_name_for_rotation = "unp1temp"
-    zones                       = [1, 2, 3]
-    vm_size                     = "Standard_D2s_v3"
-    max_count                   = 3
-    max_pods                    = 30
-    min_count                   = 1
-    os_disk_size_gb             = 30
-    os_disk_type                = "Ephemeral"
-    priority                    = "Regular"
-    spot_max_price              = null
-    eviction_policy             = null
-    vnet_subnet_id              = "node" # References vnet2 subnet key
-    pod_subnet_id               = "pod"  # References vnet2 subnet key
-    node_labels = {
-      "nodepool" = "userpool1"
+location        = "UAE North"
+environment     = "dev"
+all_resource_groups = {
+  rg1 = {
+    name = "rg-lnt-eip-aks-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
     }
-    node_taints = []
   }
-]
-
-# =============================
-# Windows VM Configuration
-# =============================
-windows_vms = {
-  win-vm1 = {
-    vm_name        = "vm1-lnt-eip-win-np-01"
-    vm_size        = "Standard_B2s"
-    admin_username = "winadmin"
-    os_disk_name   = "osdisk-vm-lnt-eip-win-np-01"
+  rg2 = {
+    name = "rg-lnt-eip-vm-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
   }
-  win-vm2 = {
-    vm_name        = "vm2-lnt-eip-win-np-01"
-    vm_size        = "Standard_B2s"
-    admin_username = "winadmin"
-    os_disk_name   = "osdisk-vm-lnt-eip-win-np-02"
-  }
+  # rg3 = {
+  #   name = "rg-mgmt-dev-uaen-01"
+  #   tags = {
+  #     "Application Owner"    = "IT"
+  #     "Business Criticality" = "Essential"
+  #     "Environment"          = "Developement"
+  #   }
+  # }
+  # rg4 = {
+  #   name = "rg-app-sec-dev-uaen-01"
+  #   tags = {
+  #     "Application Owner"    = "IT"
+  #     "Business Criticality" = "Essential"
+  #     "Environment"          = "Developement"
+  #   }
+  # }
 }
 
-windows_vm_custom_data_script = null
-
-win_vm_extensions = {
-  aad_login = {
-    publisher            = "Microsoft.Azure.ActiveDirectory"
-    type                 = "AADLoginForWindows"
-    type_handler_version = "1.0"
-  }
-  azure_monitor = {
-    publisher            = "Microsoft.Azure.Monitor"
-    type                 = "AzureMonitorWindowsAgent"
-    type_handler_version = "1.11"
-  }
-}
-
-win_vm_source_image_reference = {
-  publisher = "MicrosoftWindowsServer"
-  offer     = "WindowsServer"
-  sku       = "2022-datacenter-azure-edition"
-  version   = "latest"
-}
-
-os_disk = {
-  storage_account_type = "Standard_LRS"
-  caching              = "ReadWrite"
-  disk_size_gb         = 128
-}
-
-data_disk = {
-  storage_account_type = "Standard_LRS"
-  disk_size_gb         = 16
-  caching              = "ReadWrite"
-  lun                  = 0
-}
-
-win_vm = {
-  enable_vm_extension = false
-  extension_command   = ""
-}
-
-
-# =============================
-# Linux VM Configuration
-# =============================
-linux_vms = {
-  linux-vm1 = {
-    vm_name        = "vm1-lnt-eip-linux-np-01"
-    vm_size        = "Standard_B2s"
-    admin_username = "azureuser"
-    os_disk_name   = "osdisk-vm-lnt-eip-linux-np-01"
-  }
-  linux-vm2 = {
-    vm_name        = "vm2-lnt-eip-linux-np-01"
-    vm_size        = "Standard_B2s"
-    admin_username = "azureuser"
-    os_disk_name   = "osdisk-vm-lnt-eip-linux-np-02"
+vnets = {
+  vn1 = {
+    name    = "vnet-lnt-eip-nonprd-01"
+    rg_name = "rg-lnt-eip-aks-nonprd-01"
+    cidr    = ["10.5.0.0/20"]
+    dns     = ["168.63.129.16"]
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    subnets = {
+      sn1 = {
+        name               = "snet-lnt-eip-mft-nonprd-01"
+        cidr               = "10.5.8.64/26"
+        service_delegation = ""
+      }
+      sn2 = {
+        name               = "snet-lnt-eip-nd-nonprd-01"
+        cidr               = "10.5.0.0/24"
+        service_delegation = ""
+      }
+      sn3 = {
+        name               = "snet-lnt-eip-privatelink-nonprd-01"
+        cidr               = "10.5.1.0/24"
+        service_delegation = ""
+      }
+      sn4 = {
+        name               = "snet-lnt-eip-psql-nonprd-01"
+        cidr               = "10.5.7.0/28"
+        service_delegation = ""
+      }
+      sn5 = {
+        name               = "snet-lnt-eip-vm-nonprd-01"
+        cidr               = "10.5.8.0/26"
+        service_delegation = ""
+      }
+    }
   }
 }
 
-linux_vm_custom_data_script = null
+nsg_snet = {
+  snet-lnt-eip-mft-nonprd-01 = {
+    name      = "snet-lnt-eip-mft-nonprd-01"
+    rg_name   = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name = "vnet-lnt-eip-nonprd-01"
+    snet_name = "snet-lnt-eip-mft-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Critical"
+      "Environment"          = "Developement"
+    }
+    rules = []
+  }
 
-linux_vm_disable_password_authentication = true
+  snet-lnt-eip-nd-nonprd-01 = {
+    name      = "snet-lnt-eip-nd-nonprd-01"
+    rg_name   = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name = "vnet-lnt-eip-nonprd-01"
+    snet_name = "snet-lnt-eip-nd-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Critical"
+      "Environment"          = "Developement"
+    }
+    rules = [] 
+  }
 
-# Generate SSH key with: ssh-keygen -t rsa -b 4096 -C "azureuser@example.com"
-linux_vm_ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-public-key-here"
+  snet-lnt-eip-privatelink-nonprd-01 = {
+    name      = "snet-lnt-eip-privatelink-nonprd-01"
+    rg_name   = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name = "vnet-lnt-eip-nonprd-01"
+    snet_name = "snet-lnt-eip-privatelink-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Critical"
+      "Environment"          = "Developement"
+    }
+    rules = [] 
+  }
 
-linux_vm_extensions = {
-  azure_monitor = {
-    publisher            = "Microsoft.Azure.Monitor"
-    type                 = "AzureMonitorLinuxAgent"
-    type_handler_version = "1.29"
+  snet-lnt-eip-psql-nonprd-01 = {
+    name      = "snet-lnt-eip-psql-nonprd-01"
+    rg_name   = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name = "vnet-lnt-eip-nonprd-01"
+    snet_name = "snet-lnt-eip-psql-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Critical"
+      "Environment"          = "Developement"
+    }
+    rules = []
+  }
+
+  snet-lnt-eip-vm-nonprd-01 = {
+    name      = "snet-lnt-eip-vm-nonprd-01"
+    rg_name   = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name = "vnet-lnt-eip-nonprd-01"
+    snet_name = "snet-lnt-eip-vm-nonprd-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Critical"
+      "Environment"          = "Developement"
+    }
+    rules = []
   }
 }
 
-linux_vm_source_image_reference = {
-  publisher = "Canonical"
-  offer     = "0001-com-ubuntu-server-jammy"
-  sku       = "22_04-lts-gen2"
-  version   = "latest"
+enable_vnet_peering_remote = true
+
+vnet_peering_remote = {
+  peering1 = {
+    remote_environment           = "shared"
+    source_vnet_name             = "vnet-lnt-eip-nonprd-01"
+    remote_vnet_name             = "vnet-hub-uaen-01"
+    resource_group_name          = "rg-lnt-eip-aks-nonprd-01"
+    remote_resource_group_name   = "rg-net-sec-shared-uaen-01"
+    allow_virtual_network_access = true
+    allow_forwarded_traffic      = true
+    allow_gateway_transit        = false
+    use_remote_gateways          = true
+  }
 }
 
-linux_os_disk = {
-  storage_account_type = "Standard_LRS"
-  caching              = "ReadWrite"
-  disk_size_gb         = 30
+routetables = {
+  rt1 = {
+    name                          = "rt-nonprd-mft-uaen-01"
+    rg_name                       = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name                     = "vnet-lnt-eip-nonprd-01"
+    snet_name                     = "snet-lnt-eip-mft-nonprd-01"
+    bgp_route_propagation_enabled = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    routes = {
+      route1 = {
+        name             = "route-to-firewall"
+        address_prefixes = ["0.0.0.0/0"]
+        next_hop_type    = "VirtualAppliance"
+        next_hop_ip      = "10.0.5.4"
+      }
+      // route2 = {
+      //   name             = "route-to-gatewaysubnet"
+      //   address_prefixes = ["10.0.2.0/27"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+      // route3 = {
+      //   name             = "route-to-hub"
+      //   address_prefixes = ["10.0.0.0/20"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+    }
+  }
+
+  rt2 = {
+    name                          = "rt-nonprd-psql-uaen-01"
+    rg_name                       = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name                     = "vnet-lnt-eip-nonprd-01"
+    snet_name                     = "snet-lnt-eip-psql-nonprd-01"
+    bgp_route_propagation_enabled = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    routes = {
+      route1 = {
+        name             = "route-to-firewall"
+        address_prefixes = ["0.0.0.0/0"]
+        next_hop_type    = "VirtualAppliance"
+        next_hop_ip      = "10.0.5.4"
+      }
+      // route2 = {
+      //   name             = "route-to-gatewaysubnet"
+      //   address_prefixes = ["10.0.2.0/27"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+      // route3 = {
+      //   name             = "route-to-hub"
+      //   address_prefixes = ["10.0.0.0/20"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+    }
+  }
+  
+  rt3 = {
+    name                          = "rt-nonprd-vm-uaen-01"
+    rg_name                       = "rg-lnt-eip-aks-nonprd-01"
+    vnet_name                     = "vnet-lnt-eip-nonprd-01"
+    snet_name                     = "snet-lnt-eip-vm-nonprd-01"
+    bgp_route_propagation_enabled = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    routes = {
+      route1 = {
+        name             = "route-to-firewall"
+        address_prefixes = ["0.0.0.0/0"]
+        next_hop_type    = "VirtualAppliance"
+        next_hop_ip      = "10.0.5.4"
+      }
+      // route2 = {
+      //   name             = "route-to-gatewaysubnet"
+      //   address_prefixes = ["10.0.2.0/27"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+      // route3 = {
+      //   name             = "route-to-hub"
+      //   address_prefixes = ["10.0.0.0/20"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+    }
+  }
 }
 
-linux_data_disk = {
-  storage_account_type = "Standard_LRS"
-  disk_size_gb         = 16
-  caching              = "ReadWrite"
-  lun                  = 0
+# storage_accounts = {
+#   "sa1" = {
+#     resource_group_name      = "rg-app-dev-uaen-01"
+#     location                = "UAE North"
+#     storage_account_name    = "stglunatedevuaen01"
+#     account_tier            = "Standard"
+#     account_replication_type = "LRS"
+#     https_traffic_only_enabled = true
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Developement"
+#     }
+#   }
+# }
+
+# key_vault = {
+#   kv01 = {
+#     kv_name    = "kv-lunate-dev-uaen-001"
+#     kv_rg_name = "rg-app-sec-dev-uaen-01"
+#     sku        = "standard"
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Developement"
+#     }
+#   }
+# }
+
+loganalytics = {
+  law01 = {
+    name                = "law-dev-uaen-01"
+    resource_group_name = "rg-mgmt-dev-uaen-01"
+    sku                 = "PerGB2018"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+  }
 }
 
-# =============================
-# PostgreSQL Configuration
-# =============================
+BackupVault = {
+  vault1 = {
+    rsv_vault_name          = "rsv-dev-uaen-01"
+    rsv_resource_group_name = "rg-mgmt-dev-uaen-01"
+    location                = "UAE North"
+    rsv_vault_sku           = "Standard"
+    soft_delete_enabled     = true
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+  }
+}
+
+BackupPolicy = {
+  policy1 = {
+    backup_policy_name             = "vm-bkp-policy-01"
+    rsv_resource_group_name        = "rg-mgmt-dev-uaen-01"
+    rsv_vault_name                 = "rsv-dev-uaen-01"
+    timezone                       = "UTC"
+    instant_restore_retention_days = 2
+
+    # Backup Frequency
+    backup_frequency = "Daily"
+    backup_time      = "23:00"
+
+    # Retention Policies
+    retention_daily       = 7
+    retention_weekly      = 4
+    retention_weekly_days = ["Sunday"]
+
+    retention_monthly      = 12
+    retention_monthly_week = ["First"]
+    retention_monthly_days = ["Sunday"]
+
+    retention_yearly       = 5
+    retention_yearly_month = ["January"]
+    retention_yearly_week  = ["First"]
+    retention_yearly_days  = ["Sunday"]
+  }
+}
+
+Azure_Policy = {
+  Allowed_locations = {
+    Name              = "Allowed locations"
+    Allowed_locations = ["UAE North","East US"]
+  }
+  No_Public_IPs_on_NICs = {
+    Name = "Network Interfaces Should Not Have Public IPs"
+  }
+  allowed_vm_skus = {
+    Name = "Allowed_VM_SKUs"
+    allowed_skus = [
+      "Standard_B2as_v2", "Standard_B2ats_v2", "Standard_B2ms", "Standard_B2s", "Standard_B2s_v2", "Standard_B2ts_v2", "Standard_B4as_v2", "Standard_B4ms",
+      "Standard_B4s_v2", "Standard_D11", "Standard_D11_v2", "Standard_D12", "Standard_D12_v2", "Standard_D13", "Standard_D13_v2", "Standard_D16_v3",
+      "Standard_D16_v4", "Standard_D16_v5", "Standard_D16a_v4", "Standard_D16ads_v5", "Standard_D16as_v4", "Standard_D16as_v5", "Standard_D16d_v4",
+      "Standard_D16d_v5", "Standard_D16ds_v4", "Standard_D16ds_v5", "Standard_D16s_v3", "Standard_D16s_v4", "Standard_D16s_v5", "Standard_D2",
+      "Standard_D2_v2", "Standard_D2_v3", "Standard_D2_v4", "Standard_D2_v5", "Standard_D2a_v4", "Standard_D2ads_v5", "Standard_D2as_v4", "Standard_D2as_v5",
+      "Standard_D2d_v4", "Standard_D2d_v5", "Standard_D2ds_v4", "Standard_D2ds_v5", "Standard_D2s_v3", "Standard_D2s_v4", "Standard_D2s_v5", "Standard_D3",
+      "Standard_D3_v2", "Standard_D4", "Standard_D4_v2", "Standard_D4_v3", "Standard_D4_v4", "Standard_D4_v5", "Standard_D4a_v4", "Standard_D4ads_v5",
+      "Standard_D4as_v4", "Standard_D4as_v5", "Standard_D4d_v4", "Standard_D4d_v5", "Standard_D4ds_v4", "Standard_D4ds_v5", "Standard_D4s_v3",
+      "Standard_D4s_v4", "Standard_D4s_v5", "Standard_D5_v2", "Standard_D8_v3", "Standard_D8_v4", "Standard_D8_v5", "Standard_D8a_v4", "Standard_D8ads_v5",
+      "Standard_D8as_v4", "Standard_D8as_v5", "Standard_D8d_v4", "Standard_D8d_v5", "Standard_D8ds_v4", "Standard_D8ds_v5", "Standard_D8s_v3", "Standard_D8s_v4",
+      "Standard_D8s_v5", "Standard_DC16ads_v5", "Standard_DC16as_v5", "Standard_DC2ads_v5", "Standard_DC2as_v5", "Standard_DC2ds_v3", "Standard_DC2s_v3",
+      "Standard_DC4ads_v5", "Standard_DC4as_v5", "Standard_DC4ds_v3", "Standard_DC4s_v3", "Standard_DC8ads_v5", "Standard_DC8as_v5", "Standard_DC8ds_v3",
+      "Standard_DC8s_v3", "Standard_DS11", "Standard_DS11_v2", "Standard_DS12", "Standard_DS12_v2", "Standard_DS12-2_v2", "Standard_DS13", "Standard_DS13_v2",
+      "Standard_DS13-2_v2", "Standard_DS13-4_v2", "Standard_DS2", "Standard_DS2_v2", "Standard_DS3", "Standard_DS3_v2", "Standard_DS4", "Standard_DS4_v2",
+      "Standard_DS5_v2", "Standard_E2_v3", "Standard_E2_v4", "Standard_E2_v5", "Standard_E2a_v4", "Standard_E2ads_v5", "Standard_E2as_v4", "Standard_E2as_v5",
+      "Standard_E2d_v4", "Standard_E2d_v5", "Standard_E2ds_v4", "Standard_E2ds_v5", "Standard_E2s_v3", "Standard_E2s_v4", "Standard_E2s_v5", "Standard_E4_v3",
+      "Standard_E4_v4", "Standard_E4_v5", "Standard_E4-2ads_v5", "Standard_E4-2as_v4", "Standard_E4-2as_v5", "Standard_E4-2ds_v4", "Standard_E4-2ds_v5",
+      "Standard_E4-2s_v3", "Standard_E4-2s_v4", "Standard_E4-2s_v5", "Standard_E4a_v4", "Standard_E4ads_v5", "Standard_E4as_v4", "Standard_E4as_v5",
+      "Standard_E4d_v4", "Standard_E4d_v5", "Standard_E4ds_v4", "Standard_E4ds_v5", "Standard_E4s_v3", "Standard_E4s_v4", "Standard_E4s_v5", "Standard_E8_v3",
+      "Standard_E8_v4", "Standard_E8_v5", "Standard_E8-2ads_v5", "Standard_E8-2as_v4", "Standard_E8-2as_v5", "Standard_E8-2ds_v4", "Standard_E8-2ds_v5",
+      "Standard_E8-2s_v3", "Standard_E8-2s_v4", "Standard_E8-2s_v5", "Standard_E8-4ads_v5", "Standard_E8-4as_v4", "Standard_E8-4as_v5", "Standard_E8-4ds_v4",
+      "Standard_E8-4ds_v5", "Standard_E8-4s_v3", "Standard_E8-4s_v4", "Standard_E8-4s_v5", "Standard_E8a_v4", "Standard_E8ads_v5", "Standard_E8as_v4",
+      "Standard_E8as_v5", "Standard_E8d_v4", "Standard_E8d_v5", "Standard_E8ds_v4", "Standard_E8ds_v5", "Standard_E8s_v3", "Standard_E8s_v4", "Standard_E8s_v5",
+      "Standard_EC2ads_v5", "Standard_EC2as_v5", "Standard_EC4ads_v5", "Standard_EC4as_v5", "Standard_EC8ads_v5", "Standard_EC8as_v5", "Standard_F16",
+      "Standard_F16s", "Standard_F16s_v2", "Standard_F2", "Standard_F2s", "Standard_F2s_v2", "Standard_F32s_v2", "Standard_F4", "Standard_F4s", "Standard_F4s_v2",
+      "Standard_F8", "Standard_F8s", "Standard_F8s_v2"
+    ]
+  }
+  Audit_VM_AzureBackup = {
+    Name = "Audit Virtual Machines With No Backup Enabled"
+  }
+  Audit_VM_EncryptionatHost = {
+    Name = "Audit Virtual Machine Encryption at Host"
+  }
+}
+
+Azure_Policy_Require_a_tag_on_rg = {
+  tag1 = {
+    Name    = "Require an Environment tag on resource groups"
+    TagName = "Environment"
+  }
+  tag2 = {
+    Name    = "Require a Business Criticality tag on resource groups"
+    TagName = "Business Criticality"
+  }
+  tag3 = {
+    Name    = "Require an Application Owner tag on resource groups"
+    TagName = "Application Owner"
+  }
+}
+
+# Bastion details (from existing Bastion)
+bastion_id   = "/subscriptions/8041dff6-8186-4b97-9b32-365b16d0b28b/resourceGroups/rg-app-sec-shared-uaen-01/providers/Microsoft.Network/bastionHosts/bas-shared-uaen-01"
+bastion_name = "bas-shared-uaen-01"
+bastion_rg   = "rg-app-sec-shared-uaen-01"
