@@ -1,0 +1,530 @@
+# =========================
+# Azure DevOps Pipeline for Terraform Infrastructure Deployment
+# 
+# Pipeline Flow:
+# 1. Security Scans - Runs on both PR and CI triggers using Terrascan & Checkov
+# 2. Prepare (Plan) - Only on merge to main, creates and publishes Terraform plan artifacts
+# 3. Apply - Uses saved plan with environment-based approvals for deployment
+# =========================
+
+# ===== Pipeline Triggers =====
+# Trigger pipeline automatically when code is pushed to main branch
+trigger:
+  branches:
+    include:
+      - main
+
+# Pull Request trigger configuration
+pr:
+  autoCancel: true # Cancel previous PR builds when new commits are pushed
+  branches:
+    include:
+      - main  # Only trigger on PRs targeting the main branch
+
+# ===== Pipeline Parameters & Variables =====
+# Runtime parameter allowing users to select which environment to deploy to
+parameters:
+- name: environment
+  displayName: "Please Select Deployment Environment"
+  type: string
+  values:
+  - dev     # Development environment
+  - stg     # Staging environment  
+  - prd     # Production environment
+  - data    # Data environment
+  - int     # Integration environment
+
+# Pipeline variables configuration
+variables:
+- group: TerraformSecrets  # Variable group containing Terraform secrets (subscription IDs, tenant ID, storage config)
+- name: TERRAFORM_VERSION
+  value: 'latest'  # Terraform version to use - pinned to ensure plan/apply compatibility
+
+# =========================================================
+# Stage 1: Security Scans (Terrascan + Checkov) 
+# Purpose: Run security vulnerability scans on Terraform modules
+# Triggers: Runs on both CI builds and Pull Requests for early security feedback
+# =========================================================
+stages:
+- stage: Security_Scans
+  displayName: "Run Terrascan & Checkov Scans"
+  pool:
+    name: az-infra-prod-pool-01  # Use dedicated self-hosted agent pool for infrastructure tasks
+  jobs:
+  - job: SecurityScanJob
+    displayName: "Terraform Security Scan Job"
+    steps:
+      # Checkout the source code repository to the agent
+      - checkout: self
+
+      # Install the latest version of Terraform CLI tool
+      - task: TerraformInstaller@1
+        displayName: "Install Latest Terraform"
+        inputs:
+          terraformVersion: "latest"
+
+      # Install Terrascan security scanning tool (version 1.19.9)
+      - script: |
+          # Exit immediately if any command fails
+          set -e
+          echo "Installing Terrascan v1.19.9..."
+          # Download Terrascan binary from GitHub releases
+          curl -L https://github.com/tenable/terrascan/releases/download/v1.19.9/terrascan_1.19.9_Linux_x86_64.tar.gz -o terrascan.tar.gz
+          # Extract the binary from tar archive (verbose output)
+          tar -xvf terrascan.tar.gz terrascan
+          # Install terrascan binary to system PATH location
+          sudo install terrascan /usr/local/bin
+          # Clean up downloaded files
+          rm -f terrascan terrascan.tar.gz
+          # Verify installation by checking version
+          terrascan version
+        displayName: "Install Terrascan v1.19.9"
+
+      # Install Checkov security scanning tool via Python pip
+      - script: |
+          # Exit immediately if any command fails
+          set -e
+          echo "Installing Checkov..."
+          # Update package lists for apt package manager
+          sudo apt-get update -y
+          # Install Python 3 pip package manager
+          sudo apt-get install -y python3-pip
+          # Upgrade pip to latest version
+          pip3 install --upgrade pip
+          # Install Checkov security scanner
+          pip3 install checkov
+          # Verify installation by checking version
+          checkov -v
+        displayName: "Install Checkov"
+
+      - script: |
+          # Exit immediately if any command exits with a non-zero status
+          set -e
+          echo "Creating artifact folder for scan results..."
+          # Create directory structure recursively (-p flag) for storing scan output files
+          mkdir -p "$(System.DefaultWorkingDirectory)/scan-results"
+
+          # Enable experimental support in Terrascan for scanning Terraform modules that use optional attributes
+          # This is required for newer Terraform syntax with optional object attributes
+          export TERRASCAN_HCL_EXPERIMENTS="module_variable_optional_attrs"
+          
+          # Enable nullglob option: if no files match the pattern terraform/modules/*, 
+          # the glob will expand to an empty string instead of the literal pattern
+          shopt -s nullglob
+          
+          # Loop through each directory in the terraform/modules/ folder
+          for m in terraform/modules/*; do
+            # Skip if the current item is not a directory
+            [ -d "$m" ] || continue
+            
+            # Extract just the module name (basename) from the full path
+            # $name will be "ResourceGroup", "KeyVault", etc.
+            name=$(basename "$m")
+            echo "=== Scanning module: $name ==="
+
+            # Initialize Terraform in the module directory without configuring a backend
+            # This downloads providers and sets up the module for scanning
+            # Run in a subshell (cd "$m" && ...) to avoid changing the current working directory
+            (cd "$m" && terraform init -backend=false -input=false)
+
+            # Construct the full path to the module for the security scanners
+            # Build full path: /agent/_work/1/s/terraform/modules/ResourceGroup
+            module_path="$(Build.SourcesDirectory)/$m"
+
+            # Run Terrascan security scan and output results in JUnit XML format
+            # --policy-type azure: Use Azure-specific security policies
+            # --iac-type terraform: Scan Terraform infrastructure code
+            # --iac-version v14: Use Terraform version 14 compatibility
+            # --show-passed: Include passed checks in the output
+            # || true: Continue even if scan finds issues (don't fail the pipeline)
+            # will output to: $(System.DefaultWorkingDirectory)/scan-results/ResourceGroup-Terrascan-Report.xml
+            terrascan scan -d "$module_path" \
+              --policy-type azure \
+              --iac-type terraform \
+              --iac-version v14 \
+              --output junit-xml \
+              --show-passed > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Terrascan-Report.xml" || true
+
+            # Run Checkov security scan and output results in JUnit XML format
+            # -d: Directory to scan
+            # -o junitxml: Output format as JUnit XML for Azure DevOps test results
+            # || true: Continue even if scan finds issues (don't fail the pipeline)
+            checkov -d "$module_path" -o junitxml > "$(System.DefaultWorkingDirectory)/scan-results/${name}-Checkov-Report.xml" || true
+          done
+        displayName: "Run Terrascan & Checkov on Modules"
+
+      # Publish security scan results as test results in Azure DevOps
+      - task: PublishTestResults@2
+        displayName: "Publish JUnit Scan Results"
+        inputs:
+          testResultsFormat: "JUnit"  # Use JUnit XML format for test results
+          testResultsFiles: "$(System.DefaultWorkingDirectory)/scan-results/*.xml"  # Include all XML files from scan results
+          failTaskOnFailedTests: false  # Don't fail the pipeline if security issues are found (for visibility only)
+          testRunTitle: "IaC Security Scans (Terrascan & Checkov)"  # Display name for test results
+
+# =========================================================
+# Stage 2: Prepare (Plan) - Terraform Planning and Artifact Creation
+# Purpose: Generate Terraform execution plan and package artifacts for deployment
+# Triggers: Only runs after merge to main branch (not on Pull Requests)
+# Outputs: 
+#   - terraform-files artifact: Complete Terraform configuration
+#   - tfplan artifact: Binary Terraform plan file for exact deployment
+# =========================================================
+- stage: Prepare_Terraform_Release
+  displayName: "Prepare Artifact for Release"
+  dependsOn: Security_Scans  # Wait for security scans to complete successfully
+
+  # Only run this stage if: security scans passed AND this is a main branch build AND not a PR
+  # This ensures we only prepare artifacts for successful main branch builds
+  # If any of these conditions are not met, the stage will be skipped
+  # refs/heads/main points to the latest commit on the main branch
+  # ne(variables['Build.Reason'], 'PullRequest') ensures this is not a PR build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - job: Deployment
+    displayName: "Terraform Deployment"
+    pool:
+      name: az-infra-prod-pool-01  # Use dedicated infrastructure agent pool
+      demands:
+      - Agent.Name -equals azdevopsagent01  # Use specific agent for consistency
+    steps:
+      # Checkout source code to the build agent
+      - checkout: self
+
+      # Export non-secret storage backend configuration variables to the current job
+      - task: Bash@3
+        displayName: "Export Storage Backend Variables (no secrets)"
+        inputs:
+          # targetType: inline means the script is provided directly in the YAML / pipeline
+          targetType: inline
+          script: |
+            # Set pipeline variables from variable group for Terraform backend configuration
+            echo "##vso[task.setvariable variable=TF_STORAGE_RESOURCE_GROUP]$(TF_STORAGE_RESOURCE_GROUP)"
+            echo "##vso[task.setvariable variable=TF_STORAGE_ACCOUNT_NAME]$(TF_STORAGE_ACCOUNT_NAME)"
+            echo "##vso[task.setvariable variable=TF_CONTAINER_NAME]$(TF_CONTAINER_NAME)"
+
+      # Install required system dependencies for the build process
+      - script: |
+          # Exit immediately if any command fails
+          set -e
+          # Update package lists
+          sudo apt-get update
+          # Install essential tools: jq (JSON processor), unzip, curl (download tool), rsync (file sync)
+          sudo apt-get install -y jq unzip curl rsync
+          # Install Azure CLI using Microsoft's installation script
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies"
+
+      # Verify Azure CLI was installed correctly
+      - script: |
+          az --version
+        displayName: "Verify Azure CLI Installation"
+
+      # Install Terraform CLI at the specified version
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"  # Use version defined in pipeline variables
+
+      # Create backend configuration file for Terraform state storage
+      # Backend always uses PRD subscription for centralized state management
+      - script: |
+          # Disable command echo for security (hides sensitive variable values)
+          set +x
+          # Create backend configuration file with Azure AD authentication
+          cat > "$(Build.SourcesDirectory)/terraform/backend.tfvars" <<EOF
+          subscription_id      = "$(SUBSCRIPTION_ID_PRD)"        # PRD subscription for state storage
+          resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"  # Resource group containing storage account
+          storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"    # Storage account for Terraform state
+          container_name       = "$(TF_CONTAINER_NAME)"          # Blob container for state files
+          key                  = "${{ parameters.environment }}.tfstate"  # State file name per environment
+          use_azuread_auth     = true                            # Use Azure AD for authentication
+          EOF
+          # Re-enable command echo
+          set -x
+        displayName: "Write Backend Configuration (Azure AD auth - PRD subscription)"
+
+      # Configure provider authentication by appending environment-specific subscription info
+      - script: |
+          # Disable command echo for security
+          set +x
+          # Append tenant and subscription configuration to environment-specific tfvars file
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'                                    # Azure AD tenant ID
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'  # Target environment subscription
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+          # Re-enable command echo
+          set -x
+        displayName: "Append Non-Secret Auth Variables for Provider"
+        continueOnError: true  # Continue if file doesn't exist or other minor issues
+
+      # Step 1: Initialize Terraform with backend configuration (uses PRD subscription for state)
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "az-infra-prod-ci"  # Service connection to PRD subscription for backend access
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            # Exit on any error
+            set -e
+            # Set Azure CLI context to PRD subscription for backend operations
+            az account set --subscription $(SUBSCRIPTION_ID_PRD)
+            # Set environment variables for Terraform Azure provider authentication
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1  # Optimize Terraform for CI/CD environments
+
+            echo "Account for backend (PRD):"
+            # Display current Azure context for verification
+            az account show --query "{name:name, sub:id, tenant:tenantId}" -o tsv
+
+            # Display Terraform version for troubleshooting
+            terraform -version
+            # Initialize Terraform with backend configuration, forcing reconfiguration
+            terraform init -backend-config=backend.tfvars -reconfigure
+
+      # Step 2: Validate Terraform configuration syntax and consistency
+      - task: AzureCLI@2
+        displayName: "Terraform Validate"
+        inputs:
+          azureSubscription: "az-infra-prod-ci"  # Use PRD service connection for consistency
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            # Exit on any error
+            set -e
+            # Ensure we're using PRD subscription for backend access
+            az account set --subscription $(SUBSCRIPTION_ID_PRD)
+            # Set Azure provider authentication
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+
+            # Validate Terraform configuration files for syntax errors and consistency
+            terraform validate -no-color
+
+      # Step 3: Generate Terraform execution plan 
+      # Note: Backend uses PRD subscription, but provider targets the selected environment subscription
+      - task: AzureCLI@2
+        displayName: "Terraform Plan"
+        inputs:
+          azureSubscription: "az-infra-prod-ci"  # PRD subscription for backend state access
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            # Exit on any error
+            set -e
+            # Set backend context to PRD subscription
+            az account set --subscription $(SUBSCRIPTION_ID_PRD)
+            # Configure Azure provider authentication
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+
+            # Generate execution plan with environment-specific configuration
+            terraform plan \
+              -var-file="environments/${{ parameters.environment }}.tfvars" \     # Environment-specific variables
+              -var="tf_storage_resource_group=$(TF_STORAGE_RESOURCE_GROUP)" \     # Backend storage config
+              -var="tf_storage_account_name=$(TF_STORAGE_ACCOUNT_NAME)" \         # Backend storage config  
+              -var="tf_container_name=$(TF_CONTAINER_NAME)" \                     # Backend storage config
+              -input=false \                                                       # Don't prompt for input
+              -out=tfplan                                                          # Save plan to binary file
+
+      # Package Terraform plan and configuration files as pipeline artifacts for the Apply stage
+      - task: Bash@3
+        displayName: "Stage plan & config for artifacts"
+        inputs:
+          targetType: inline
+          script: |
+            # Exit on any error
+            set -e
+            # Create directory for the binary plan artifact
+            mkdir -p "$(Build.ArtifactStagingDirectory)/tfplan"
+            # Copy the saved plan file to artifact staging
+            cp "$(Build.SourcesDirectory)/terraform/tfplan" "$(Build.ArtifactStagingDirectory)/tfplan/"
+
+            # Create directory for Terraform configuration files
+            mkdir -p "$(Build.ArtifactStagingDirectory)/terraform-files"
+            # Sync all Terraform files except local state and plan files
+            # --delete: Remove files in destination that don't exist in source
+            # --exclude: Skip unnecessary files that shouldn't be in the artifact
+            rsync -a --delete \
+              --exclude '.terraform/' \     # Exclude local provider cache
+              --exclude '*.plan' \          # Exclude any plan files
+              "$(Build.SourcesDirectory)/terraform/" \
+              "$(Build.ArtifactStagingDirectory)/terraform-files/"
+
+      # Publish Terraform configuration files as a pipeline artifact
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Pipeline Artifact: terraform-files"
+        inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/terraform-files"  # Source path
+          artifact: "terraform-files"                                       # Artifact name
+          publishLocation: "pipeline"                                       # Store in pipeline artifacts
+
+      # Publish Terraform execution plan as a separate pipeline artifact
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Pipeline Artifact: tfplan"
+        inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/tfplan"  # Source path
+          artifact: "tfplan"                                      # Artifact name  
+          publishLocation: "pipeline"                             # Store in pipeline artifacts
+
+# =========================================================
+# Stage 3: Terraform Apply - Execute Infrastructure Changes
+# Purpose: Apply the saved Terraform plan to deploy infrastructure changes
+# Triggers: Only runs after successful Plan stage on main branch (not PRs)
+# Security: Bound to Azure DevOps Environment for manual approvals and deployment gates
+# =========================================================
+- stage: Terraform_Apply
+  displayName: "Terraform Apply"
+  dependsOn: Prepare_Terraform_Release  # Wait for Plan stage to complete successfully
+  # Only run if: Plan stage succeeded AND this is main branch build AND not a PR
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - deployment: ApplyDeployment
+    displayName: "Apply Terraform Changes"
+    # Bind this deployment to an Azure DevOps Environment for approval workflows
+    # Environment name format: MR-Approval-{environment} (e.g., MR-Approval-dev, MR-Approval-prd)
+    # Configure approvals and checks in Azure DevOps Pipelines > Environments
+    environment: "MR-Approval-${{ parameters.environment }}"
+    pool:
+      name: az-infra-prod-pool-01  # Use dedicated infrastructure agent pool
+      demands:
+      - Agent.Name -equals azdevopsagent01  # Use specific agent for consistency
+
+    # Deployment strategy configuration
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            # Don't checkout source code (we'll use artifacts instead)
+            - checkout: none
+
+            # Download Terraform configuration files artifact from Plan stage
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download terraform-files"
+              inputs:
+                buildType: current                              # From current pipeline run
+                artifact: "terraform-files"                    # Artifact name
+                targetPath: "$(Pipeline.Workspace)/terraform-files"  # Download location
+
+            # Download saved Terraform plan artifact from Plan stage
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download tfplan"
+              inputs:
+                buildType: current                         # From current pipeline run
+                artifact: "tfplan"                         # Artifact name
+                targetPath: "$(Pipeline.Workspace)/tfplan" # Download location
+
+            # Install system dependencies required for Apply operations
+            - script: |
+                # Exit on any error
+                set -e
+                # Update package manager cache
+                sudo apt-get update -y
+                # Install essential tools for Azure operations
+                sudo apt-get install -y jq unzip curl  # JSON processor, archive tools, HTTP client
+                # Install Azure CLI using Microsoft's official installation script
+                curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+              displayName: "Install Dependencies (Azure CLI, tools)"
+
+            # Verify Azure CLI installation was successful
+            - script: |
+                az --version
+              displayName: "Verify Azure CLI Installation"
+
+            # Install Terraform CLI for Apply operations
+            - task: TerraformInstaller@1
+              displayName: "Install Terraform (Apply Stage)"
+              inputs:
+                terraformVersion: "$(TERRAFORM_VERSION)"  # Match version used in Plan stage
+
+            # Recreate backend configuration file for safety and consistency
+            - script: |
+                # Disable command echo for security
+                set +x
+                # Create identical backend config as used in Plan stage
+                cat > "$(Pipeline.Workspace)/terraform-files/backend.tfvars" <<EOF
+                subscription_id      = "$(SUBSCRIPTION_ID_PRD)"        # PRD subscription for state
+                resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"  # State storage resource group
+                storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"    # State storage account
+                container_name       = "$(TF_CONTAINER_NAME)"          # State blob container
+                key                  = "${{ parameters.environment }}.tfstate"  # Environment-specific state file
+                use_azuread_auth     = true                            # Azure AD authentication
+                EOF
+                # Re-enable command echo
+                set -x
+              displayName: "Write Backend Configuration (Azure AD auth - PRD subscription)"
+
+            # Initialize Terraform in Apply stage (required before applying saved plans)
+            - task: AzureCLI@2
+              displayName: "Terraform Init (backend in PRD)"
+              inputs:
+                azureSubscription: "az-infra-prod-ci"  # Service connection to PRD subscription
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  # Exit on any error
+                  set -e
+                  # Set Azure CLI context to PRD subscription for backend access
+                  az account set --subscription $(SUBSCRIPTION_ID_PRD)
+                  # Configure Azure provider authentication
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1  # Optimize for CI/CD environment
+
+                  echo "Account for backend (PRD):"
+                  # Display current Azure context for verification
+                  az account show --query "{name:name, sub:id, tenant:tenantId}" -o tsv
+
+                  # Show Terraform version for troubleshooting
+                  terraform -version
+                  # Initialize Terraform with same backend config as Plan stage
+                  terraform init -backend-config=backend.tfvars -reconfigure
+
+            # Optional step: Display what changes will be applied (for audit trail)
+            - task: AzureCLI@2
+              displayName: "Terraform Show (saved plan)"
+              inputs:
+                azureSubscription: "az-infra-prod-ci"  # PRD service connection
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  # Exit on any error
+                  set -e
+                  # Display the contents of the saved plan in human-readable format
+                  # This provides visibility into what will be changed before applying
+                  terraform show -no-color "$(Pipeline.Workspace)/tfplan/tfplan" | tee plan.txt
+
+            # Publish the human-readable plan as an artifact for audit purposes
+            - task: PublishPipelineArtifact@1
+              displayName: "Publish Plan Text for Audit"
+              inputs:
+                targetPath: "$(Pipeline.Workspace)/terraform-files/plan.txt"  # Source file
+                artifact: "tfplan-text"                                        # Artifact name
+                publishLocation: "pipeline"                                    # Store in pipeline
+
+            # Execute the saved Terraform plan to apply infrastructure changes
+            - task: AzureCLI@2
+              displayName: "Terraform Apply (using saved plan)"
+              inputs:
+                azureSubscription: "az-infra-prod-ci"  # PRD service connection for backend
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  # Exit on any error
+                  set -e
+                  # Set Azure CLI context to PRD for backend operations
+                  az account set --subscription $(SUBSCRIPTION_ID_PRD)
+                  # Configure Azure provider authentication
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1
+
+                  # Apply the exact saved plan without user intervention
+                  # -input=false: Don't prompt for input
+                  # -auto-approve: Don't ask for confirmation (plan is pre-approved)
+                  terraform apply -input=false -auto-approve "$(Pipeline.Workspace)/tfplan/tfplan"

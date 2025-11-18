@@ -1,0 +1,11 @@
+# NonProd Environment Variables
+
+variables:
+  - name: SUBSCRIPTION_ID_nonprod
+    value: '43731ed3-ead8-4406-b85d-18e966dfdb9f'
+  
+  - name: ENVIRONMENT_NAME
+    value: 'nonprod'
+  
+  - name: LOCATION
+    value: 'uaenorth'

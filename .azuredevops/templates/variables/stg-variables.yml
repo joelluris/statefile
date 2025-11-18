@@ -1,0 +1,11 @@
+# Staging/Test Environment Variables
+
+variables:
+  - name: SUBSCRIPTION_ID_stg
+    value: 'YOUR_STG_SUBSCRIPTION_ID'  # Staging environment subscription
+  
+  - name: ENVIRONMENT_NAME
+    value: 'stg'
+  
+  - name: LOCATION
+    value: 'uaenorth'

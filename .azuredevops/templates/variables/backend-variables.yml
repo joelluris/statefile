@@ -1,0 +1,7 @@
+# Backend State Storage Variables
+# This subscription is used ONLY for storing Terraform state files
+# All environments (dev, stg, prd, data, int) use this subscription for their backend
+
+variables:
+  - name: SUBSCRIPTION_ID_BACKEND
+    value: '42dedbdb-3ad0-438c-a796-66bb1c08686a'  # Management subscription for state storage

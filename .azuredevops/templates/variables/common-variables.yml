@@ -1,0 +1,20 @@
+# Common Variables - Shared across all environments
+# These variables are used by all pipeline stages
+
+variables:
+  # Terraform Configuration
+  - name: TERRAFORM_VERSION
+    value: 'latest'
+  
+  # Azure Tenant
+  - name: TENANT_ID
+    value: '7d1a04ec-981a-405a-951b-dd2733120e4c'  # Replace with your Azure AD Tenant ID
+  
+  - name: TF_STORAGE_RESOURCE_GROUP
+    value: 'rg-alz-mgmt-state-uaenorth-001'
+  
+  - name: TF_STORAGE_ACCOUNT_NAME
+    value: 'stoalzmgmuae001wksi'
+  
+  - name: TF_CONTAINER_NAME
+    value: 'mgmt-tfstate'

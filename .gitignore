@@ -1,0 +1,43 @@
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+!*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local .terraform directories
+**/.terraform/*
+
+# Terraform lockfile
+.terraform.lock.hcl
+
+# Backend configuration (contains sensitive data)
+terraform/backend.tfvars
+
+# Environment-specific configuration files are now tracked in git
+# Sensitive values (tenant_id, subscription_id) are appended by pipeline at runtime
+!terraform/environments/*.tfvars
+
+# Sensitive or personal files
+*.pem
+*.key
+*.crt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+
