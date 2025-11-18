@@ -211,6 +211,13 @@ stages:
           set -x
         displayName: "Write Backend Configuration (Azure AD auth - Backend subscription)"
 
+      # Debug: Show backend configuration
+      - script: |
+          echo "=== Backend Configuration Content ==="
+          cat "$(Build.SourcesDirectory)/terraform/backend.tfvars"
+          echo ""
+        displayName: "Debug: Show backend.tfvars content"
+
       # Debug: List directory structure to verify environments folder exists and tfvars file is present
       - script: |
           echo "=== Listing terraform directory structure ==="
