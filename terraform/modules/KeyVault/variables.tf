@@ -1,25 +1,38 @@
-variable "location" {
-  type        = string
-  description = "The location/region where the UAMIs will be created"
+variable "location" {}
+variable "tenant_id" {}
+variable "subscription_id" {}
+variable "resource_group_output" {}
+
+variable "key_vault" {
+  type = map(object({
+    kv_name              = string
+    kv_rg_name              = string
+    sku                  = string
+    tags                 = map(string)
+  }))
 }
 
-variable "resource_group_name" {
-  type        = string
-  description = "The name of the resource group"
+variable "Arcon_PAM_IP" {
+  type    = list(string)
+  default = [
+    "20.233.224.6/32",
+    "4.161.34.11/32"
+  ]
 }
-
-variable "tags" {
-  type        = map(string)
-  description = "A map of tags to apply to the UAMIs"
-  default     = {}
+ 
+variable "umbrella_ip_range" {
+  type    = list(string)
+  default = [
+    "155.190.0.0/16",
+    "151.186.0.0/16",
+    "146.112.0.0/16",
+    "155.190.42.14/32"
+  ]
 }
-
-variable "acr_name" {
-  type        = string
-  description = "The name of the Azure Container Registry"
-}
-
-variable "private_dns_zone_id" {
-  type        = string
-  description = "The ID of the private DNS zone to link with the ACR"
+ 
+variable "AzureDevopsrunner" {
+  type    = list(string)
+  default = [
+    "4.161.33.244/32"  # Azure DevOps Runner IP
+  ]
 }
