@@ -188,6 +188,7 @@ variable "BackupPolicy" {
     retention_yearly_week          = list(string)
     retention_yearly_days          = list(string)
   }))
+  default = {}
 }
 
 variable "Azure_Policy" {
@@ -196,6 +197,7 @@ variable "Azure_Policy" {
     Allowed_locations = optional(list(string))
     allowed_skus      = optional(list(string))
   }))
+  default = {}
 }
 
 variable "Azure_Policy_Require_a_tag_on_rg" {
@@ -204,6 +206,7 @@ variable "Azure_Policy_Require_a_tag_on_rg" {
     TagName = string
   }))
   description = "Map of required tags on resource groups"
+  default     = {}
 }
 
 # variable "storage_accounts" {
