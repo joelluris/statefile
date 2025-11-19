@@ -30,7 +30,7 @@ locals {
     "vaultcore" = "privatelink.vaultcore.azure.net"
     "blob"      = "privatelink.blob.core.windows.net"
   }
-  
+
   dns_zones_rg_map = {
     "vaultcore" = "rg-hub-dns-uaenorth"
     "blob"      = "rg-hub-dns-uaenorth"

@@ -44,22 +44,22 @@ module "VirtualNetwork" {
 #   }
 # }
 
-# module "KeyVault" {
-#   source                     = "./modules/KeyVault"
-#   location                   = var.location
-#   tenant_id                  = var.tenant_id
-#   subscription_id            = var.subscription_id
-#   key_vault                  = var.key_vault
-#   resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
-#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-#   private_dns_zone_ids = {
-#     vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
-#   }
+module "KeyVault" {
+  source                     = "./modules/KeyVault"
+  location                   = var.location
+  tenant_id                  = var.tenant_id
+  subscription_id            = var.subscription_id
+  key_vault                  = var.key_vault
+  resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  private_dns_zone_ids = {
+    vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
+  }
 
-#   Arcon_PAM_IP      = var.Arcon_PAM_IP
-#   umbrella_ip_range = var.umbrella_ip_range
-#   AzureDevopsrunner = var.AzureDevopsrunner
-# }
+  Arcon_PAM_IP      = var.Arcon_PAM_IP
+  umbrella_ip_range = var.umbrella_ip_range
+  AzureDevopsrunner = var.AzureDevopsrunner
+}
 
 # module "LogAnalytics" {
 #   source                = "./modules/LogAnalytics"
@@ -153,4 +153,21 @@ module "peering2" {
   depends_on = [
     module.VirtualNetwork
   ]
+}
+
+module "user_assigned_managed_identity" {
+  source = "./modules/uami"
+
+  user_assigned_managed_identities = var.user_assigned_managed_identity
+  tenant_id                        = var.tenant_id
+  subscription_id                  = var.subscription_id
+
+  # Pass resource IDs for scope resolution
+  rg_ids              = module.ResourceGroup.rg_ids
+  key_vault_ids       = module.KeyVault.key_vault_ids # Add when KeyVault module is enabled
+  storage_account_ids = {}                            # Add when Storage module is enabled
+  acr_ids             = {}                            # Add when ACR module 
+  aks_ids             = {}                            # Add when AKS module is enabled
+
+  depends_on = [module.ResourceGroup]
 }

@@ -264,3 +264,22 @@ variable "Azure_Policy_Require_a_tag_on_rg" {
   }))
   default = {}
 }
+
+# ==============================================================================
+# USER ASSIGNED MANAGED IDENTITY MODULE VARIABLES
+# ==============================================================================
+
+variable "user_assigned_managed_identity" {
+  description = "Map of User Assigned Managed Identities to create"
+  type = map(object({
+    name     = string
+    rg_name  = string
+    location = string
+    role_assignments = map(object({
+      role_definition_name = string
+      scope_type           = string
+      scope                = string
+    }))
+  }))
+  default = {}
+}

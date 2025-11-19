@@ -16,7 +16,6 @@ output "azure_security_admins_id" {
   value = azuread_group.azure_security_admins.id
 }
 
-
 resource "azurerm_role_assignment" "network_admin" {
   scope                = "/subscriptions/${var.subscription_id}"
   role_definition_name = "Network Contributor"

@@ -70,8 +70,8 @@ vnets = {
         service_delegation = ""
       }
       sn4 = {
-        name               = "snet-lnt-eip-psql-nonprd-01"
-        cidr               = "10.5.7.0/28"
+        name = "snet-lnt-eip-psql-nonprd-01"
+        cidr = "10.5.7.0/28"
         # service_delegation = "Microsoft.DBforPostgreSQL/flexibleServers" # Comment if not needed
         service_delegation = ""
       }
@@ -234,7 +234,7 @@ routetables = {
   }
 
   rt2 = {
-    name                          = "rt-nonprd-psql-uaen-01"
+    name                          = "rt-nonprd-nd-uaen-01"
     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name                     = "snet-lnt-eip-nd-nonprd-uaen-01"
@@ -516,5 +516,66 @@ Azure_Policy_Require_a_tag_on_rg = {
 # bastion_name = "bas-shared-uaen-01"
 # bastion_rg   = "rg-app-sec-shared-uaen-01"
 
-
-
+user_assigned_managed_identity = {
+  workload_identity = {
+    name     = "uami-lnt-eip-nonprd-uaen-01"
+    rg_name  = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location = "UAE North"
+    role_assignments = {
+      # ra1 = {
+      #   role_definition_name = "Contributor"
+      #   scope_type           = "resource_group"
+      #   scope                = "rg1"
+      # }
+      ra2 = {
+        role_definition_name = "Key Vault Secrets User"
+        scope_type           = "key_vault"
+        scope                = "kv-lnt-nonprd-uaen-01"
+      }
+      # ra3 = {
+      #   role_definition_name = "AcrPush"
+      #   scope_type           = "azure_container_registry"
+      #   scope                = ""
+      # }
+      # ra4 = {
+      #   role_definition_name = "AcrDelete"
+      #   scope_type           = "azure_container_registry"
+      #   scope                = ""
+      # }
+    }
+  },
+  kubernetes_identity = {
+    name     = "kubernetes-lnt-eip-aks-nonprd-uaen-01"
+    rg_name  = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location = "UAE North"
+    role_assignments = {
+      ra1 = {
+        role_definition_name = "Managed Identity Operator"
+        scope_type           = "user_assigned_managed_identity"
+        scope                = "kubelet-lnt-eip-aks-kubelet-nonprd-uaen-01"
+      }
+      ra2 = {
+        role_definition_name = "Contributor"
+        scope_type           = "resource_group"
+        scope                = "rg1"
+      }
+      # ra3 = {
+      #   role_definition_name = "Private DNS Zone Contributor"
+      #   scope_type           = "private_dns_zone"
+      #   scope                = ""
+      # }
+    }
+  },
+  kubelet_identity = {
+    name     = "kubelet-lnt-eip-aks-kubelet-nonprd-uaen-01"
+    rg_name  = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location = "UAE North"
+    role_assignments = {
+      # ra1 = {
+      #   role_definition_name = "AcrPull"
+      #   scope_type           = "azure_container_registry"
+      #   scope                = ""
+      # }
+    }
+  }
+}
