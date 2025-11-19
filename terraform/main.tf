@@ -23,7 +23,7 @@ module "VirtualNetwork" {
   tf_storage_account_name    = var.tf_storage_account_name
   tf_container_name          = var.tf_container_name
   tf_storage_access_key      = var.tf_storage_access_key
-  enable_vnet_peering_remote = false # Disabled - using separate vnet-peering module
+  enable_vnet_peering_remote = false
   vnet_peering_remote        = {}
   hub_vnet_id                = ""
   environment                = var.environment
