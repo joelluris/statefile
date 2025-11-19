@@ -55,7 +55,6 @@ provider "azuread" {
 #   features {}
 # }
 
-
 provider "azurerm" {
   resource_provider_registrations = "none"
   alias                           = "connectivity"

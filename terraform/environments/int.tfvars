@@ -1,5 +1,5 @@
-location        = "UAE North"
-environment     = "dev"
+location    = "UAE North"
+environment = "dev"
 all_resource_groups = {
   rg1 = {
     name = "rg-lnt-eip-aks-nonprd-uaen-01"
@@ -74,6 +74,24 @@ vnets = {
       }
     }
   }
+  vn2 = {
+    name    = "vnet-lnt-vm-nonprd-uaen-01"
+    rg_name = "rg-lnt-eip-vm-nonprd-uaen-01"
+    cidr    = ["10.6.0.0/20"]
+    dns     = ["168.63.129.16"]
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    subnets = {
+      sn1 = {
+        name               = "snet-lnt-eip-mft-nonprd-uaen-01"
+        cidr               = "10.6.0.0/24"
+        service_delegation = ""
+      }
+    }
+  }
 }
 
 nsg_snet = {
@@ -100,7 +118,7 @@ nsg_snet = {
       "Business Criticality" = "Critical"
       "Environment"          = "Developement"
     }
-    rules = [] 
+    rules = []
   }
 
   snet-lnt-eip-privatelink-nonprd-01 = {
@@ -113,7 +131,7 @@ nsg_snet = {
       "Business Criticality" = "Critical"
       "Environment"          = "Developement"
     }
-    rules = [] 
+    rules = []
   }
 
   snet-lnt-eip-psql-nonprd-01 = {
@@ -143,19 +161,19 @@ nsg_snet = {
   }
 }
 
-enable_vnet_peering_remote = false
+enable_vnet_peering_remote = true
 
 vnet_peering_remote = {
   peering1 = {
-    remote_environment           = "shared"
+    remote_environment           = "hub"
     source_vnet_name             = "vnet-lnt-eip-nonprd-uaen-01"
-    remote_vnet_name             = "vnet-hub-uaen-01"
+    remote_vnet_name             = "vnet-hub-uaenorth"
     resource_group_name          = "rg-lnt-eip-aks-nonprd-uaen-01"
-    remote_resource_group_name   = "rg-net-sec-shared-uaen-01"
+    remote_resource_group_name   = "rg-hub-uaenorth"
     allow_virtual_network_access = true
     allow_forwarded_traffic      = true
     allow_gateway_transit        = false
-    use_remote_gateways          = true
+    use_remote_gateways          = false
   }
 }
 
@@ -225,7 +243,7 @@ routetables = {
       // }
     }
   }
-  
+
   rt3 = {
     name                          = "rt-nonprd-vm-uaen-01"
     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"

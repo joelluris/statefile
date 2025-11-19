@@ -17,6 +17,13 @@
 #   resource_group_name = each.value
 # }
 
+# data "azurerm_virtual_network" "hub" {
+#   provider            = azurerm.LUNATE-SHARED_SERVICES
+#   name                = "vnet-hub-uaen-01"
+#   resource_group_name = "rg-net-sec-shared-uaen-01"
+# }
+
+# =====================================================================================
 
 locals {
   dns_zones_map = {
@@ -36,14 +43,6 @@ data "azurerm_private_dns_zone" "dns_zones" {
   name                = each.key
   resource_group_name = each.value
 }
-
-
-
-# data "azurerm_virtual_network" "hub" {
-#   provider            = azurerm.LUNATE-SHARED_SERVICES
-#   name                = "vnet-hub-uaen-01"
-#   resource_group_name = "rg-net-sec-shared-uaen-01"
-# }
 
 data "azurerm_virtual_network" "hub" {
   provider            = azurerm.connectivity

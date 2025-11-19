@@ -67,6 +67,12 @@ variable "vnets" {
    type = map(map(string))
  }
 
+ variable "hub_vnet_id" {
+   description = "Hub VNet ID for peering"
+   type        = string
+   default     = ""
+ }
+
 variable "routetables" {
   description = "Map of route tables to be created"
   type = map(object({

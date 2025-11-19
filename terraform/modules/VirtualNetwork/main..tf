@@ -143,6 +143,7 @@ resource "azurerm_virtual_network_peering" "peer_remote" {
   virtual_network_name = each.value.source_vnet_name
   remote_virtual_network_id = (
     each.value.remote_environment == "shared" ? local.shared_vnet_ids[each.value.remote_vnet_name] :
+    each.value.remote_environment == "hub" ? var.hub_vnet_id :
     null
   )
   allow_virtual_network_access = each.value.allow_virtual_network_access
