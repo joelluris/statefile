@@ -1,37 +1,72 @@
-# General Variables
-# Define required authentication variables
-variable "tenant_id" {}
-variable "subscription_id" {}
-//variable "client_id" {}
-//variable "client_secret" {}
-variable "location" {}
-variable "environment" {}
-variable "tf_storage_resource_group" {
+# ==============================================================================
+# COMMON VARIABLES
+# ==============================================================================
+
+variable "tenant_id" {
+  description = "Azure AD Tenant ID"
   type        = string
-  default     = ""  # Default to an empty string if not provided
+}
+
+variable "subscription_id" {
+  description = "Azure Subscription ID"
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region for resources"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, stg, prd)"
+  type        = string
+}
+
+# ==============================================================================
+# TERRAFORM BACKEND VARIABLES
+# ==============================================================================
+
+variable "tf_storage_resource_group" {
+  description = "Resource group for Terraform state storage"
+  type        = string
+  default     = ""
 }
 
 variable "tf_storage_account_name" {
+  description = "Storage account name for Terraform state"
   type        = string
-  default     = ""  # Default to an empty string if not provided
+  default     = ""
 }
 
 variable "tf_container_name" {
+  description = "Container name for Terraform state"
   type        = string
-  default     = ""  # Default to an empty string if not provided
+  default     = ""
 }
 
 variable "tf_storage_access_key" {
+  description = "Access key for Terraform state storage"
   type        = string
-  default     = ""  # Default to an empty string if not provided
-  sensitive = true
+  default     = ""
+  sensitive   = true
 }
+
+# ==============================================================================
+# RESOURCE GROUP MODULE VARIABLES
+# ==============================================================================
+
 variable "all_resource_groups" {
+  description = "Map of resource groups to create"
   type = map(object({
     name = string
     tags = map(string)
   }))
 }
+
+# ==============================================================================
+# VIRTUAL NETWORK MODULE VARIABLES
+# ==============================================================================
+
 variable "vnets" {
   description = "Map of VNets to be created"
   type = map(object({
@@ -49,7 +84,7 @@ variable "vnets" {
 }
 
 variable "nsg_snet" {
-  description = "Map of nsg_snet to create"
+  description = "Map of NSGs to create for subnets"
   type = map(object({
     name      = string
     rg_name   = string
@@ -90,7 +125,38 @@ variable "routetables" {
   default = {}
 }
 
+# ==============================================================================
+# VNET PEERING MODULE VARIABLES
+# ==============================================================================
+
+variable "enable_vnet_peering_remote" {
+  description = "Flag to enable remote VNet peering"
+  type        = bool
+  default     = true
+}
+
+variable "vnet_peering_remote" {
+  description = "Map of VNet peering configurations"
+  type = map(object({
+    source_vnet_name             = string
+    remote_vnet_name             = string
+    resource_group_name          = string
+    remote_resource_group_name   = string
+    remote_environment           = string
+    allow_virtual_network_access = bool
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    use_remote_gateways          = bool
+  }))
+  default = {}
+}
+
+# ==============================================================================
+# KEY VAULT MODULE VARIABLES
+# ==============================================================================
+
 variable "key_vault" {
+  description = "Map of Key Vaults to create"
   type = map(object({
     kv_name    = string
     kv_rg_name = string
@@ -100,31 +166,47 @@ variable "key_vault" {
 }
 
 variable "Arcon_PAM_IP" {
-  type    = list(string)
-  default = []
+  description = "IP addresses for Arcon PAM access"
+  type        = list(string)
+  default     = []
 }
 
 variable "umbrella_ip_range" {
-  type    = list(string)
-  default = []
+  description = "IP ranges for Umbrella access"
+  type        = list(string)
+  default     = []
 }
 
 variable "AzureDevopsrunner" {
-  type    = list(string)
-  default = []
+  description = "IP addresses for Azure DevOps runners"
+  type        = list(string)
+  default     = []
 }
 
-# variable "loganalytics" {
-#   type = map(object({
-#     name                = string
-#     resource_group_name = string
-#     sku                 = string
-#     tags                = map(string)
-#   }))
-# }
+# ==============================================================================
+# STORAGE MODULE VARIABLES
+# ==============================================================================
+
+variable "storage_accounts" {
+  description = "Map of storage accounts to create"
+  type = map(object({
+    resource_group_name        = string
+    location                   = string
+    storage_account_name       = string
+    account_tier               = string
+    account_replication_type   = string
+    https_traffic_only_enabled = bool
+    tags                       = map(string)
+  }))
+  default = {}
+}
+
+# ==============================================================================
+# BACKUP MODULE VARIABLES
+# ==============================================================================
 
 variable "BackupVault" {
-  description = "A map of Recovery Services Vault configurations"
+  description = "Map of Recovery Services Vaults to create"
   type = map(object({
     rsv_vault_name          = string
     location                = string
@@ -136,32 +218,8 @@ variable "BackupVault" {
   default = {}
 }
 
-variable "enable_vnet_peering_remote" {
-  description = "Flag to enable remote VNet peering (only for shared env)"
-  type        = bool
-  default     = true  # Defaulting to false ensures no peering occurs unless explicitly set
-}
-
-
-variable "vnet_peering_remote" {
-  description = "Map of VNet peering configurations"
-  type = map(object({
-    source_vnet_name           = string
-    remote_vnet_name           = string
-    resource_group_name        = string
-    remote_resource_group_name = string
-    remote_environment                 = string
-    allow_virtual_network_access = bool
-    allow_forwarded_traffic    = bool
-    allow_gateway_transit      = bool
-    use_remote_gateways        = bool
-  }))
-
-   default = {}  # Set an empty map as default (null is not allowed for map type)
-}
-
 variable "BackupPolicy" {
-  description = "A map of backup policy configurations"
+  description = "Map of backup policies to create"
   type = map(object({
     backup_policy_name             = string
     rsv_resource_group_name        = string
@@ -184,7 +242,12 @@ variable "BackupPolicy" {
   default = {}
 }
 
+# ==============================================================================
+# AZURE POLICY MODULE VARIABLES
+# ==============================================================================
+
 variable "Azure_Policy" {
+  description = "Map of Azure Policy assignments"
   type = map(object({
     Name              = string
     Allowed_locations = optional(list(string))
@@ -194,24 +257,10 @@ variable "Azure_Policy" {
 }
 
 variable "Azure_Policy_Require_a_tag_on_rg" {
+  description = "Map of required tags on resource groups"
   type = map(object({
     Name    = string
     TagName = string
-  }))
-  description = "Map of required tags on resource groups"
-  default     = {}
-}
-
-variable "storage_accounts" {
-  description = "A map of storage accounts to be created"
-  type = map(object({
-    resource_group_name     = string
-    location                = string
-    storage_account_name    = string
-    account_tier            = string
-    account_replication_type = string
-    https_traffic_only_enabled = bool
-    tags                    = map(string)
   }))
   default = {}
 }

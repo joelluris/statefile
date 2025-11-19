@@ -33,33 +33,33 @@ module "VirtualNetwork" {
   rg_details_input           = module.ResourceGroup.rg_details_output
 }
 
-module "storage_account" {
-  source                     = "./modules/Storage-lun"
-  storage_accounts           = var.storage_accounts
-  snet_details_output        = module.VirtualNetwork.snet_details_output
-  environment                = var.environment
-  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = {
-    blob = data.azurerm_private_dns_zone.dns_zones["blob"].id
-  }
-}
+# module "storage_account" {
+#   source                     = "./modules/Storage-lun"
+#   storage_accounts           = var.storage_accounts
+#   snet_details_output        = module.VirtualNetwork.snet_details_output
+#   environment                = var.environment
+#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+#   private_dns_zone_ids = {
+#     blob = data.azurerm_private_dns_zone.dns_zones["blob"].id
+#   }
+# }
 
-module "KeyVault" {
-  source                     = "./modules/KeyVault"
-  location                   = var.location
-  tenant_id                  = var.tenant_id
-  subscription_id            = var.subscription_id
-  key_vault                  = var.key_vault
-  resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
-  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = {
-    vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
-  }
+# module "KeyVault" {
+#   source                     = "./modules/KeyVault"
+#   location                   = var.location
+#   tenant_id                  = var.tenant_id
+#   subscription_id            = var.subscription_id
+#   key_vault                  = var.key_vault
+#   resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
+#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+#   private_dns_zone_ids = {
+#     vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
+#   }
 
-  Arcon_PAM_IP      = var.Arcon_PAM_IP
-  umbrella_ip_range = var.umbrella_ip_range
-  AzureDevopsrunner = var.AzureDevopsrunner
-}
+#   Arcon_PAM_IP      = var.Arcon_PAM_IP
+#   umbrella_ip_range = var.umbrella_ip_range
+#   AzureDevopsrunner = var.AzureDevopsrunner
+# }
 
 # module "LogAnalytics" {
 #   source                = "./modules/LogAnalytics"
@@ -70,24 +70,24 @@ module "KeyVault" {
 #   resource_group_output = module.ResourceGroup.rg_details_output
 # }
 
-module "AzureBackup" {
-  source                = "./modules/AzureBackup"
-  location              = var.location
-  tenant_id             = var.tenant_id
-  subscription_id       = var.subscription_id
-  BackupVault           = var.BackupVault
-  BackupPolicy          = var.BackupPolicy
-  resource_group_output = module.ResourceGroup.rg_details_output
-}
+# module "AzureBackup" {
+#   source                = "./modules/AzureBackup"
+#   location              = var.location
+#   tenant_id             = var.tenant_id
+#   subscription_id       = var.subscription_id
+#   BackupVault           = var.BackupVault
+#   BackupPolicy          = var.BackupPolicy
+#   resource_group_output = module.ResourceGroup.rg_details_output
+# }
 
-module "AzurePolicy" {
-  source                           = "./modules/AzurePolicy"
-  location                         = var.location
-  tenant_id                        = var.tenant_id
-  subscription_id                  = var.subscription_id
-  Azure_Policy                     = var.Azure_Policy
-  Azure_Policy_Require_a_tag_on_rg = var.Azure_Policy_Require_a_tag_on_rg
-}
+# module "AzurePolicy" {
+#   source                           = "./modules/AzurePolicy"
+#   location                         = var.location
+#   tenant_id                        = var.tenant_id
+#   subscription_id                  = var.subscription_id
+#   Azure_Policy                     = var.Azure_Policy
+#   Azure_Policy_Require_a_tag_on_rg = var.Azure_Policy_Require_a_tag_on_rg
+# }
 
 # module "Bastion" {
 #   source = "./modules/Bastion"
@@ -154,4 +154,3 @@ module "peering2" {
     module.VirtualNetwork
   ]
 }
-

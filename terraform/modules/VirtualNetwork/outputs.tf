@@ -26,3 +26,8 @@ output "vnet_ids" {
   description = "A map of virtual network names to their IDs."
   value       = { for k, v in azurerm_virtual_network.vnets : k => v.id }
 }
+
+output "nsg_ids" {
+  description = "A map of NSG names to their IDs."
+  value       = { for k, nsg in azurerm_network_security_group.nsg_snet : k => nsg.id }
+}
