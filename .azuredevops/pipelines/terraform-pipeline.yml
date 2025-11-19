@@ -33,7 +33,6 @@ parameters:
   - prd
   - data
   - int
-  - nonprod
 
 # Pipeline variables configuration
 # Import common variables (shared across all environments)
