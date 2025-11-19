@@ -44,6 +44,7 @@ data "azurerm_private_dns_zone" "dns_zones" {
   resource_group_name = local.dns_zones_rg_map[each.key]
 }
 
+# This is needed for VNet peering configurations
 data "azurerm_virtual_network" "hub" {
   provider            = azurerm.connectivity
   name                = "vnet-hub-uaenorth"
