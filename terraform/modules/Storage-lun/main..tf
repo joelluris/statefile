@@ -15,16 +15,21 @@ resource "azurerm_storage_account" "storage" {
 # Private Endpoint for Storage Account Blob
 resource "azurerm_private_endpoint" "storage_pe" {
   for_each            = var.storage_accounts
-  name                = "${each.value.storage_account_name}-pe"
+  name                = "pe-${each.value.storage_account_name}"
   location            = each.value.location
   resource_group_name = each.value.resource_group_name
-  subnet_id = var.snet_details_output["vnet-${var.environment}-uaen-01-snet-${var.environment}-pep-uaen-01"].id
+  subnet_id           = var.private_endpoint_subnet_id
 
   private_service_connection {
-    name                           = "${each.value.storage_account_name}-blob-connection"
+    name                           = "psc-${each.value.storage_account_name}-blob"
     private_connection_resource_id = azurerm_storage_account.storage[each.key].id
     subresource_names              = ["blob"]
     is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "pdz-group-${each.value.storage_account_name}"
+    private_dns_zone_ids = [var.private_dns_zone_ids["blob"]]
   }
 
   tags = each.value.tags

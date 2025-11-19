@@ -16,3 +16,7 @@ variable "snet_details_output" {
     id = string
   }))
 }
+variable "private_endpoint_subnet_id" {}
+variable "private_dns_zone_ids" {
+  type = map(string)
+}

@@ -33,12 +33,16 @@ module "VirtualNetwork" {
   rg_details_input           = module.ResourceGroup.rg_details_output
 }
 
-# module "storage_account" {
-#   source          = "./modules/Storage"
-#   storage_accounts  = var.storage_accounts
-#   snet_details_output = module.VirtualNetwork.snet_details_output
-#   environment               = var.environment
-# }
+module "storage_account" {
+  source                     = "./modules/Storage-lun"
+  storage_accounts           = var.storage_accounts
+  snet_details_output        = module.VirtualNetwork.snet_details_output
+  environment                = var.environment
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  private_dns_zone_ids = {
+    blob = data.azurerm_private_dns_zone.dns_zones["blob"].id
+  }
+}
 
 module "KeyVault" {
   source                     = "./modules/KeyVault"
@@ -151,20 +155,3 @@ module "peering2" {
   ]
 }
 
-# pass pdz 
-
-# module "KeyVault" {
-#   source = "./modules/KeyVault"
-
-#   # Pass DNS Zone IDs for private endpoints
-#   dns_zone_ids = {
-#     vaultcore = data.azurerm_private_dns_zone.dns_zones["privatelink.vaultcore.azure.net"].id
-#     blob      = data.azurerm_private_dns_zone.dns_zones["privatelink.blob.core.windows.net"].id
-#     azurecr   = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
-#   }
-
-#   # Other Key Vault variables
-#   key_vault_name = var.key_vault_name
-#   resource_group = var.resource_group
-#   location       = var.location
-# }
