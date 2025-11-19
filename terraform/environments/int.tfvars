@@ -1,18 +1,19 @@
 # Authentication variables (for local testing only - pipeline adds these dynamically)
 # Comment out when running in pipeline
-# tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
-# subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
+tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
+subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
 
 
 location    = "UAE North"
-environment = "dev"
+environment = "int"
+
 all_resource_groups = {
   rg1 = {
     name = "rg-lnt-eip-aks-nonprd-uaen-01"
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
   }
   rg2 = {
@@ -20,7 +21,7 @@ all_resource_groups = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
   }
   # rg3 = {
@@ -28,7 +29,7 @@ all_resource_groups = {
   #   tags = {
   #     "Application Owner"    = "IT"
   #     "Business Criticality" = "Essential"
-  #     "Environment"          = "Developement"
+  #     "Environment"          = "Integration"
   #   }
   # }
   # rg4 = {
@@ -36,7 +37,7 @@ all_resource_groups = {
   #   tags = {
   #     "Application Owner"    = "IT"
   #     "Business Criticality" = "Essential"
-  #     "Environment"          = "Developement"
+  #     "Environment"          = "Integration"
   #   }
   # }
 }
@@ -50,7 +51,7 @@ vnets = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     subnets = {
       sn1 = {
@@ -71,6 +72,7 @@ vnets = {
       sn4 = {
         name               = "snet-lnt-eip-psql-nonprd-01"
         cidr               = "10.5.7.0/28"
+        # service_delegation = "Microsoft.DBforPostgreSQL/flexibleServers" # Comment if not needed
         service_delegation = ""
       }
       sn5 = {
@@ -88,7 +90,7 @@ vnets = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     subnets = {
       sn1 = {
@@ -109,9 +111,23 @@ nsg_snet = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Critical"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
-    rules = []
+    rules = [
+      # {
+      #   name                         = "AllowSSH"
+      #   access                       = "Allow"
+      #   destination_address_prefix   = "*"
+      #   destination_address_prefixes = []
+      #   destination_port_range       = "22"
+      #   destination_port_ranges      = []
+      #   direction                    = "Inbound"
+      #   priority                     = 1001
+      #   protocol                     = "Tcp"
+      #   source_address_prefix        = "*"
+      #   source_port_range            = "*"
+      # },
+    ]
   }
 
   snet-lnt-eip-nd-nonprd-01 = {
@@ -122,7 +138,7 @@ nsg_snet = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Critical"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     rules = []
   }
@@ -135,7 +151,7 @@ nsg_snet = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Critical"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     rules = []
   }
@@ -148,7 +164,7 @@ nsg_snet = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Critical"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     rules = []
   }
@@ -161,7 +177,7 @@ nsg_snet = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Critical"
-      "Environment"          = "Developement"
+      "Environment"          = "Integration"
     }
     rules = []
   }
@@ -193,7 +209,7 @@ routetables = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
     routes = {
       route1 = {
@@ -226,7 +242,7 @@ routetables = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
     routes = {
       route1 = {
@@ -259,7 +275,7 @@ routetables = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
     routes = {
       route1 = {
@@ -291,7 +307,7 @@ routetables = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
     routes = {
       route1 = {
@@ -323,7 +339,7 @@ routetables = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
     routes = {
       route1 = {
@@ -350,16 +366,16 @@ routetables = {
 
 storage_accounts = {
   sa1 = {
-    resource_group_name      = "rg-lnt-eip-aks-nonprd-uaen-01"
-    location                 = "UAE North"
-    storage_account_name     = "stlntnonprduaen01"
-    account_tier             = "Standard"
-    account_replication_type = "LRS"
+    resource_group_name        = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location                   = "UAE North"
+    storage_account_name       = "stlntnonprduaen01"
+    account_tier               = "Standard"
+    account_replication_type   = "LRS"
     https_traffic_only_enabled = true
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
   }
 }
@@ -367,12 +383,12 @@ storage_accounts = {
 key_vault = {
   kv01 = {
     kv_name    = "kv-lnt-nonprd-uaen-01"
-    kv_rg_name = "rg-lnt-eip-aks-nonprd-uaen-01"  # Using rg1
+    kv_rg_name = "rg-lnt-eip-aks-nonprd-uaen-01" # Using rg1
     sku        = "standard"
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
   }
 }
@@ -385,7 +401,7 @@ key_vault = {
 #     tags = {
 #       "Application Owner"    = "IT"
 #       "Business Criticality" = "Essential"
-#       "Environment"          = "Developement"
+#       "Environment"          = "Integrations"
 #     }
 #   }
 # } }
@@ -400,7 +416,7 @@ BackupVault = {
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
-      "Environment"          = "Developement"
+      "Environment"          = "Integrations"
     }
   }
 }
@@ -436,7 +452,7 @@ BackupVault = {
 Azure_Policy = {
   Allowed_locations = {
     Name              = "Allowed locations"
-    Allowed_locations = ["UAE North","East US"]
+    Allowed_locations = ["UAE North", "East US"]
   }
   No_Public_IPs_on_NICs = {
     Name = "Network Interfaces Should Not Have Public IPs"
