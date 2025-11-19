@@ -7,7 +7,3 @@ variable "all_resource_groups" {
     tags = map(string)
   }))
 }
-
-output "rg_details_output" {
-  value = { for rg in azurerm_resource_group.ENV_RG : rg.name => rg.name }
-}

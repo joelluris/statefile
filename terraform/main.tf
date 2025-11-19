@@ -10,7 +10,7 @@ module "VirtualNetwork" {
   # providers = {
   #   azurerm.LUNATE-SHARED_SERVICES = azurerm.LUNATE-SHARED_SERVICES
   # }
-  
+
   providers = {
     azurerm.connectivity = azurerm.connectivity
   }
@@ -23,7 +23,7 @@ module "VirtualNetwork" {
   tf_storage_account_name    = var.tf_storage_account_name
   tf_container_name          = var.tf_container_name
   tf_storage_access_key      = var.tf_storage_access_key
-  enable_vnet_peering_remote = false  # Disabled - using separate vnet-peering module
+  enable_vnet_peering_remote = false # Disabled - using separate vnet-peering module
   vnet_peering_remote        = {}
   hub_vnet_id                = ""
   environment                = var.environment
@@ -40,18 +40,22 @@ module "VirtualNetwork" {
 #   environment               = var.environment
 # }
 
-# module "KeyVault" {
-#   source          = "./modules/KeyVault"
-#   location        = var.location
-#   tenant_id       = var.tenant_id
-#   subscription_id = var.subscription_id
-#   key_vault       = var.key_vault
-#   resource_group_output = module.ResourceGroup.rg_details_output
+module "KeyVault" {
+  source                     = "./modules/KeyVault"
+  location                   = var.location
+  tenant_id                  = var.tenant_id
+  subscription_id            = var.subscription_id
+  key_vault                  = var.key_vault
+  resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  private_dns_zone_ids = {
+    vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
+  }
 
-#   Arcon_PAM_IP          = var.Arcon_PAM_IP
-#   umbrella_ip_range     = var.umbrella_ip_range
-#   AzureDevopsrunner     = var.AzureDevopsrunner
-# }
+  Arcon_PAM_IP      = var.Arcon_PAM_IP
+  umbrella_ip_range = var.umbrella_ip_range
+  AzureDevopsrunner = var.AzureDevopsrunner
+}
 
 # module "LogAnalytics" {
 #   source                = "./modules/LogAnalytics"
@@ -62,24 +66,24 @@ module "VirtualNetwork" {
 #   resource_group_output = module.ResourceGroup.rg_details_output
 # }
 
-# module "AzureBackup" {
-#   source                = "./modules/AzureBackup"
-#   location              = var.location
-#   tenant_id             = var.tenant_id
-#   subscription_id       = var.subscription_id
-#   BackupVault           = var.BackupVault
-#   BackupPolicy          = var.BackupPolicy
-#   resource_group_output = module.ResourceGroup.rg_details_output
-# }
+module "AzureBackup" {
+  source                = "./modules/AzureBackup"
+  location              = var.location
+  tenant_id             = var.tenant_id
+  subscription_id       = var.subscription_id
+  BackupVault           = var.BackupVault
+  BackupPolicy          = var.BackupPolicy
+  resource_group_output = module.ResourceGroup.rg_details_output
+}
 
-# module "AzurePolicy" {
-#   source                           = "./modules/AzurePolicy"
-#   location                         = var.location
-#   tenant_id                        = var.tenant_id
-#   subscription_id                  = var.subscription_id
-#   Azure_Policy                     = var.Azure_Policy
-#   Azure_Policy_Require_a_tag_on_rg = var.Azure_Policy_Require_a_tag_on_rg
-# }
+module "AzurePolicy" {
+  source                           = "./modules/AzurePolicy"
+  location                         = var.location
+  tenant_id                        = var.tenant_id
+  subscription_id                  = var.subscription_id
+  Azure_Policy                     = var.Azure_Policy
+  Azure_Policy_Require_a_tag_on_rg = var.Azure_Policy_Require_a_tag_on_rg
+}
 
 # module "Bastion" {
 #   source = "./modules/Bastion"
@@ -87,9 +91,9 @@ module "VirtualNetwork" {
 #     azurerm.LUNATE-SHARED_SERVICES = azurerm.LUNATE-SHARED_SERVICES
 #   }
 
-  # providers = {
-  #   azurerm.connectivity = azurerm.connectivity
-  # }
+# providers = {
+#   azurerm.connectivity = azurerm.connectivity
+# }
 
 #   bastion_id                       = data.azurerm_bastion_host.central_bastion.id
 #   bastion_name                     = data.azurerm_bastion_host.central_bastion.name
@@ -107,7 +111,7 @@ module "peering" {
   providers = {
     azurerm.connectivity = azurerm.connectivity
   }
-  
+
   peering_name_spoke_to_hub = "peer-nonprd-aks-to-hub"
   peering_name_hub_to_spoke = "peer-hub-to-nonprd-aks"
   spoke_vnet_name           = module.VirtualNetwork.vnet_details_output["vn1"].name
@@ -130,7 +134,7 @@ module "peering2" {
   providers = {
     azurerm.connectivity = azurerm.connectivity
   }
-  
+
   peering_name_spoke_to_hub = "peer-nonprd-vm-to-hub"
   peering_name_hub_to_spoke = "peer-hub-to-nonprd-vm"
   spoke_vnet_name           = module.VirtualNetwork.vnet_details_output["vn2"].name

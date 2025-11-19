@@ -358,18 +358,18 @@ routetables = {
 #   }
 # }
 
-# key_vault = {
-#   kv01 = {
-#     kv_name    = "kv-lunate-dev-uaen-001"
-#     kv_rg_name = "rg-app-sec-dev-uaen-01"
-#     sku        = "standard"
-#     tags = {
-#       "Application Owner"    = "IT"
-#       "Business Criticality" = "Essential"
-#       "Environment"          = "Developement"
-#     }
-#   }
-# }
+key_vault = {
+  kv01 = {
+    kv_name    = "kv-lnt-eip-nonprd-uaen-001"
+    kv_rg_name = "rg-lnt-eip-aks-nonprd-uaen-01"  # Using rg1
+    sku        = "standard"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+  }
+}
 
 # loganalytics = {
 #   law01 = {
@@ -384,20 +384,20 @@ routetables = {
 #   }
 # } }
 
-# BackupVault = {
-#   vault1 = {
-#     rsv_vault_name          = "rsv-dev-uaen-01"
-#     rsv_resource_group_name = "rg-mgmt-dev-uaen-01"
-#     location                = "UAE North"
-#     rsv_vault_sku           = "Standard"
-#     soft_delete_enabled     = true
-#     tags = {
-#       "Application Owner"    = "IT"
-#       "Business Criticality" = "Essential"
-#       "Environment"          = "Developement"
-#     }
-#   }
-# }
+BackupVault = {
+  vault1 = {
+    rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
+    rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location                = "UAE North"
+    rsv_vault_sku           = "Standard"
+    soft_delete_enabled     = true
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+  }
+}
 
 # BackupPolicy = {
 #   policy1 = {

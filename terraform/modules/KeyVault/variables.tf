@@ -2,6 +2,10 @@ variable "location" {}
 variable "tenant_id" {}
 variable "subscription_id" {}
 variable "resource_group_output" {}
+variable "private_endpoint_subnet_id" {}
+variable "private_dns_zone_ids" {
+  type = map(string)
+}
 
 variable "key_vault" {
   type = map(object({

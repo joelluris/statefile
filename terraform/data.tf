@@ -27,21 +27,21 @@
 
 locals {
   dns_zones_map = {
-    # "privatelink.vaultcore.azure.net"    = "rg-app-sec-shared-uaen-01"
-    # "privatelink.uaenorth.azmk8s.io"     = "rg-app-sec-shared-uaen-01"
-    # "privatelink.azurecr.io"             = "rg-app-sec-shared-uaen-01"
-    "privatelink.blob.core.windows.net"  = "rg-hub-dns-uaenorth"
-    # "privatelink.file.core.windows.net"  = "rg-app-sec-shared-uaen-01"
-    # "privatelink.queue.core.windows.net" = "rg-app-sec-shared-uaen-01"
-    # "privatelink.table.core.windows.net" = "rg-app-sec-shared-uaen-01"
+    "vaultcore" = "privatelink.vaultcore.azure.net"
+    "blob"      = "privatelink.blob.core.windows.net"
+  }
+  
+  dns_zones_rg_map = {
+    "vaultcore" = "rg-hub-dns-uaenorth"
+    "blob"      = "rg-hub-dns-uaenorth"
   }
 }
 
 data "azurerm_private_dns_zone" "dns_zones" {
   for_each            = local.dns_zones_map
   provider            = azurerm.connectivity
-  name                = each.key
-  resource_group_name = each.value
+  name                = each.value
+  resource_group_name = local.dns_zones_rg_map[each.key]
 }
 
 data "azurerm_virtual_network" "hub" {
