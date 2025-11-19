@@ -1,3 +1,9 @@
+# Authentication variables (for local testing only - pipeline adds these dynamically)
+# Comment out when running in pipeline
+# tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
+# subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
+
+
 location    = "UAE North"
 environment = "dev"
 all_resource_groups = {
@@ -496,6 +502,3 @@ Azure_Policy_Require_a_tag_on_rg = {
 
 
 
-# Authentication variables (for local testing only - pipeline adds these dynamically)
-tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
-subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
