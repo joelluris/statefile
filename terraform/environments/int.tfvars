@@ -10,7 +10,7 @@ all_resource_groups = {
     }
   }
   rg2 = {
-    name = "rg-lnt-eip-vm-nonprd-01"
+    name = "rg-lnt-eip-vm-nonprd-uaen-01"
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -197,7 +197,7 @@ routetables = {
     name                          = "rt-nonprd-psql-uaen-01"
     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-psql-nonprd-01"
+    snet_name                     = "snet-lnt-eip-nd-nonprd-uaen-01"
     bgp_route_propagation_enabled = false
     tags = {
       "Application Owner"    = "IT"
@@ -227,6 +227,70 @@ routetables = {
   }
   
   rt3 = {
+    name                          = "rt-nonprd-vm-uaen-01"
+    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+    snet_name                     = "snet-lnt-eip-privatelink-nonprd-uaen-01"
+    bgp_route_propagation_enabled = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    routes = {
+      route1 = {
+        name             = "route-to-firewall"
+        address_prefixes = ["0.0.0.0/0"]
+        next_hop_type    = "VirtualAppliance"
+        next_hop_ip      = "10.0.5.4"
+      }
+      // route2 = {
+      //   name             = "route-to-gatewaysubnet"
+      //   address_prefixes = ["10.0.2.0/27"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+      // route3 = {
+      //   name             = "route-to-hub"
+      //   address_prefixes = ["10.0.0.0/20"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+    }
+  }
+  rt4 = {
+    name                          = "rt-nonprd-psql-uaen-01"
+    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+    snet_name                     = "snet-lnt-eip-psql-nonprd-01"
+    bgp_route_propagation_enabled = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Developement"
+    }
+    routes = {
+      route1 = {
+        name             = "route-to-firewall"
+        address_prefixes = ["0.0.0.0/0"]
+        next_hop_type    = "VirtualAppliance"
+        next_hop_ip      = "10.0.5.4"
+      }
+      // route2 = {
+      //   name             = "route-to-gatewaysubnet"
+      //   address_prefixes = ["10.0.2.0/27"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+      // route3 = {
+      //   name             = "route-to-hub"
+      //   address_prefixes = ["10.0.0.0/20"]
+      //   next_hop_type    = "VirtualAppliance"
+      //   next_hop_ip      = "10.0.5.4"
+      // }
+    }
+  }
+  rt5 = {
     name                          = "rt-nonprd-vm-uaen-01"
     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
@@ -411,3 +475,9 @@ routetables = {
 # bastion_id   = "/subscriptions/8041dff6-8186-4b97-9b32-365b16d0b28b/resourceGroups/rg-app-sec-shared-uaen-01/providers/Microsoft.Network/bastionHosts/bas-shared-uaen-01"
 # bastion_name = "bas-shared-uaen-01"
 # bastion_rg   = "rg-app-sec-shared-uaen-01"
+
+
+
+# Authentication variables (for local testing only - pipeline adds these dynamically)
+tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
+subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
