@@ -28,7 +28,7 @@ parameters:
   type: string                                         # Data type
   default: nonprod                                     # Default environment
   values:                                              # The dropdown options
-  - dev      # ← This appears in your dropdown
+  - dev
   - stg
   - prd
   - data
@@ -115,7 +115,6 @@ stages:
       #   displayName: "Install Checkov"
 
       # - script: |
-
       #     set -e
       #     echo "Creating artifact folder for scan results..."
       #     mkdir -p "$(System.DefaultWorkingDirectory)/scan-results"
