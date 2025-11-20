@@ -113,25 +113,21 @@ module "peering" {
   source = "./modules/vnet-peering"
 
   providers = {
-    azurerm.connectivity = azurerm.connectivity
+    azurerm.LUNATE-SHARED_SERVICES = azurerm.LUNATE-SHARED_SERVICES
   }
 
-  # Build peering configurations dynamically from tfvars
-  peering_configurations = {
-    for k, v in var.peering_configurations : k => {
-      peering_name_spoke_to_hub = v.peering_name_spoke_to_hub
-      peering_name_hub_to_spoke = v.peering_name_hub_to_spoke
-      spoke_vnet_name           = module.VirtualNetwork.vnet_details_output[v.spoke_vnet_key].name
-      spoke_resource_group_name = v.spoke_resource_group_name
-      spoke_vnet_id             = module.VirtualNetwork.vnet_details_output[v.spoke_vnet_key].id
-      use_remote_gateways       = v.use_remote_gateways
-      hub_allow_gateway_transit = v.hub_allow_gateway_transit
-    }
+  # Merge VNet details with IDs from VirtualNetwork module
+  vnets = {
+    for k, v in var.vnets : k => merge(v, {
+      vnet_id = module.VirtualNetwork.vnet_details_output[k].id
+    })
   }
 
-  hub_vnet_name           = data.azurerm_virtual_network.hub.name
-  hub_resource_group_name = data.azurerm_virtual_network.hub.resource_group_name
-  hub_vnet_id             = data.azurerm_virtual_network.hub.id
+  hub_vnet_name            = data.azurerm_virtual_network.hub.name
+  hub_resource_group_name  = data.azurerm_virtual_network.hub.resource_group_name
+  hub_vnet_id              = data.azurerm_virtual_network.hub.id
+  use_remote_gateways      = false
+  hub_allow_gateway_transit = false
 
   depends_on = [
     module.VirtualNetwork
@@ -154,3 +150,4 @@ module "user_assigned_managed_identity" {
 
   depends_on = [module.ResourceGroup]
 }
+
