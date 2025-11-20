@@ -31,13 +31,6 @@ resource "azurerm_container_registry" "acr" {
     }
   }
 
-  dynamic "trust_policy" {
-    for_each = each.value.sku == "Premium" ? [1] : []
-    content {
-      enabled = true
-    }
-  }
-
   tags = each.value.tags
 }
 
