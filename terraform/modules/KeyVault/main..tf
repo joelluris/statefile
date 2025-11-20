@@ -1,12 +1,18 @@
 resource "azurerm_key_vault" "kv" {
-  for_each            = var.key_vault
-  name                = each.value.kv_name
-  tenant_id           = var.tenant_id
-  location            = var.location
-  resource_group_name = var.key_vault[each.key].kv_rg_name
-  sku_name            = each.value.sku
-  tags                = each.value.tags
-  depends_on          = [var.resource_group_output]
+  for_each                        = var.key_vault
+  name                            = each.value.kv_name
+  tenant_id                       = var.tenant_id
+  location                        = var.location
+  resource_group_name             = var.key_vault[each.key].kv_rg_name
+  sku_name                        = each.value.sku
+  purge_protection_enabled        = true
+  soft_delete_retention_days      = 7  # Minimum recommended: 90 days
+  enabled_for_disk_encryption     = true
+  enabled_for_deployment          = false
+  enabled_for_template_deployment = false
+  public_network_access_enabled   = false  # Disable public access, use private endpoint only
+  tags                            = each.value.tags
+  depends_on                      = [var.resource_group_output]
 
   network_acls {
     default_action = "Deny"
