@@ -103,8 +103,8 @@ vnets = {
 }
 
 nsg_snet = {
-  snet-lnt-eip-mft-nonprd-uaen-01 = {
-    name      = "snet-lnt-eip-mft-nonprd-uaen-01"
+  nsg-01 = {
+    name      = "nsg-lnt-eip-mft-nonprd-uaen-01"
     rg_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name = "snet-lnt-eip-mft-nonprd-uaen-01"
@@ -130,8 +130,8 @@ nsg_snet = {
     ]
   }
 
-  snet-lnt-eip-nd-nonprd-01 = {
-    name      = "snet-lnt-eip-nd-nonprd-uaen-01"
+  nsg-02 = {
+    name      = "nsg-lnt-eip-nd-nonprd-uaen-01"
     rg_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name = "snet-lnt-eip-nd-nonprd-uaen-01"
@@ -143,8 +143,8 @@ nsg_snet = {
     rules = []
   }
 
-  snet-lnt-eip-privatelink-nonprd-01 = {
-    name      = "snet-lnt-eip-privatelink-nonprd-uaen-01"
+  nsg-03 = {
+    name      = "nsg-lnt-eip-privatelink-nonprd-uaen-01"
     rg_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name = "snet-lnt-eip-privatelink-nonprd-uaen-01"
@@ -156,8 +156,8 @@ nsg_snet = {
     rules = []
   }
 
-  snet-lnt-eip-psql-nonprd-01 = {
-    name      = "snet-lnt-eip-psql-nonprd-01"
+  nsg-04 = {
+    name      = "nsg-lnt-eip-psql-nonprd-01"
     rg_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name = "snet-lnt-eip-psql-nonprd-01"
@@ -169,8 +169,8 @@ nsg_snet = {
     rules = []
   }
 
-  snet-lnt-eip-vm-nonprd-uaen-01 = {
-    name      = "snet-lnt-eip-vm-nonprd-uaen-01"
+  nsg-05 = {
+    name      = "nsg-lnt-eip-vm-nonprd-uaen-01"
     rg_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
     vnet_name = "vnet-lnt-eip-nonprd-uaen-01"
     snet_name = "snet-lnt-eip-vm-nonprd-uaen-01"
