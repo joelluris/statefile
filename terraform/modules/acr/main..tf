@@ -22,15 +22,6 @@ resource "azurerm_container_registry" "acr" {
     default_action = "Deny"
   }
 
-  # Enable features based on SKU
-  dynamic "retention_policy" {
-    for_each = each.value.sku == "Premium" ? [1] : []
-    content {
-      days    = 7
-      enabled = true
-    }
-  }
-
   tags = each.value.tags
 }
 

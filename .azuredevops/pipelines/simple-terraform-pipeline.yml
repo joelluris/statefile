@@ -1,0 +1,322 @@
+name: 'MyCustomPipeline-$(Date:yyyyMMdd)$(Rev:.r)'
+
+trigger:
+  branches:
+    include:
+      - '*'  # All branches will trigger prepare_terraform_release stage
+
+# PR trigger - Apply stage only runs on PR to main
+pr:
+  autoCancel: true
+  branches:
+    include:
+      - main
+
+# ===== Pipeline Parameters & Variables =====
+# Runtime parameter allowing users to select which environment to deploy to
+parameters:
+- name: environment
+  displayName: "Please Select Deployment Environment"
+  type: string
+  default: int
+  values:
+  - dev
+  - stg
+  - prd
+  - data
+  - int
+
+# Pipeline variables configuration
+# Import common variables (shared across all environments)
+variables:
+- template: ../templates/variables/common-variables.yml
+
+# Import backend state storage variables (used by all environments)
+- template: ../templates/variables/backend-variables.yml
+
+# Import environment-specific variables based on runtime parameter
+- ${{ if eq(parameters.environment, 'dev') }}:
+  - template: ../templates/variables/dev-variables.yml
+- ${{ if eq(parameters.environment, 'stg') }}:
+  - template: ../templates/variables/stg-variables.yml
+- ${{ if eq(parameters.environment, 'prd') }}:
+  - template: ../templates/variables/prd-variables.yml
+- ${{ if eq(parameters.environment, 'data') }}:
+  - template: ../templates/variables/data-variables.yml
+- ${{ if eq(parameters.environment, 'int') }}:
+  - template: ../templates/variables/int-variables.yml
+- ${{ if eq(parameters.environment, 'nonprod') }}:
+  - template: ../templates/variables/nonprod-variables.yml
+
+# Default pool for all jobs (can be overridden at job level if needed)
+pool:
+  name: WSL-Agent
+  demands:
+  - Agent.Name -equals Dell-Predator-G15-5530
+
+# =========================================================
+# Stage 1: Install Terraform
+# Purpose: Install Terraform for security scans and validation
+# Triggers: Runs on both CI builds and Pull Requests for early security feedback
+# =========================================================
+stages:
+- stage: Install_Terraform
+  displayName: "Install Terraform"
+  jobs:
+  - job: SecurityScanJob
+    displayName: "Terraform Security Scan Job"
+    steps:
+      - checkout: self
+      
+      - task: TerraformInstaller@1
+        displayName: "Install Latest Terraform"
+        inputs:
+          terraformVersion: "latest"
+
+# =========================================================
+# Stage 2: Prepare (Plan) - Terraform Planning and Artifact Creation
+# Purpose: Generate Terraform execution plan and package artifacts for deployment
+# Triggers: Runs on all branches (feature branches and main)
+# Outputs: 
+#   - terraform-files artifact: Complete Terraform configuration
+#   - tfplan artifact: Binary Terraform plan file for exact deployment
+# =========================================================
+- stage: Prepare_Terraform_Release
+  displayName: "Prepare Artifact for Release"
+  dependsOn: Install_Terraform
+  # Run on all branches except when it's a PR (PR only runs security scans + prepare, not apply)
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - job: Deployment
+    displayName: "Terraform Deployment"
+    steps:
+      - checkout: self
+      - task: Bash@3
+        displayName: "Export Storage Backend Variables (no secrets)"
+        inputs:
+          targetType: inline
+          script: |
+            # Set pipeline variables from variable group for Terraform backend configuration
+            echo "##vso[task.setvariable variable=TF_STORAGE_RESOURCE_GROUP]$(TF_STORAGE_RESOURCE_GROUP)"
+            echo "##vso[task.setvariable variable=TF_STORAGE_ACCOUNT_NAME]$(TF_STORAGE_ACCOUNT_NAME)"
+            echo "##vso[task.setvariable variable=TF_CONTAINER_NAME]$(TF_CONTAINER_NAME)"
+
+      - script: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y jq unzip curl rsync
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies (Azure CLI, jq, rsync)"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"
+
+      # Create backend configuration file for Terraform state storage
+      - script: |
+          set +x
+          cat > "$(Build.SourcesDirectory)/terraform/backend.tfvars" <<EOF
+          subscription_id      = "$(SUBSCRIPTION_ID_BACKEND)"
+          resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
+          storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
+          container_name       = "$(TF_CONTAINER_NAME)"
+          key                  = "$lnt-eip-{{ parameters.environment }}.tfstate"
+          use_azuread_auth     = true
+          EOF
+          set -x
+        displayName: "Write Backend Configuration"
+
+      # Configure provider authentication
+      - script: |
+          set +x
+          if [ ! -f "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars" ]; then
+            echo "ERROR: environments/${{ parameters.environment }}.tfvars does not exist"
+            exit 1
+          fi
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+        displayName: "Append Auth Variables to tfvars"
+
+      # Step 1: Initialize Terraform with backend configuration (uses Backend subscription for state)
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            # Exit on any error
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1  # Optimize Terraform for CI/CD environments
+            echo "Account for backend (state storage):"
+            az account show --query "{name:name, sub:id, tenant:tenantId}" -o tsv
+            terraform -version
+            terraform init -backend-config=backend.tfvars -reconfigure
+
+      # Step 2: Validate Terraform configuration syntax and consistency
+      - task: AzureCLI@2
+        displayName: "Terraform Validate"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            # Ensure we're using Backend subscription for backend access
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+
+            # Validate Terraform configuration files for syntax errors and consistency
+            terraform validate -no-color
+
+      - task: AzureCLI@2
+        displayName: "Terraform Plan"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            # Exit on any error
+            set -e
+            # Set backend context to Backend subscription for state access
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            # Configure Azure provider authentication
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+
+            # Generate execution plan with environment-specific configuration
+            terraform plan \
+              -var-file="environments/${{ parameters.environment }}.tfvars" \
+              -input=false \
+              -out=tfplan
+            terraform show -no-color tfplan > tfplan.txt
+
+      - task: Bash@3
+        displayName: "Stage plan & config for artifacts"
+        inputs:
+          targetType: inline
+          script: |
+            # Exit on any error
+            set -e
+            mkdir -p "$(Build.ArtifactStagingDirectory)/tfplan"
+            cp "$(Build.SourcesDirectory)/terraform/tfplan" "$(Build.ArtifactStagingDirectory)/tfplan/"
+            cp "$(Build.SourcesDirectory)/terraform/tfplan.txt" "$(Build.ArtifactStagingDirectory)/tfplan/"
+            mkdir -p "$(Build.ArtifactStagingDirectory)/terraform-files"
+            rsync -a --delete \
+              --exclude '.terraform/' \
+              --exclude '*.plan' \
+              "$(Build.SourcesDirectory)/terraform/" \
+              "$(Build.ArtifactStagingDirectory)/terraform-files/"
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Pipeline Artifact: terraform-files"
+        inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/terraform-files"
+          artifact: "terraform-files"
+          publishLocation: "pipeline"
+
+      # Publish Terraform execution plan as a separate pipeline artifact
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Pipeline Artifact: tfplan"
+        inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/tfplan"
+          artifact: "tfplan"
+          publishLocation: "pipeline"
+
+# =========================================================
+# Stage 3: Terraform Apply - Execute Infrastructure Changes
+# Purpose: Apply the saved Terraform plan to deploy infrastructure changes
+# Triggers: Only runs on Pull Requests targeting main branch
+# Security: Bound to Azure DevOps Environment for manual approvals and deployment gates
+# =========================================================
+- stage: Terraform_Apply
+  displayName: "Terraform Apply"
+  dependsOn: Prepare_Terraform_Release
+  condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: ApplyDeployment
+    displayName: "Apply Terraform Changes"
+    environment: "MR-Approval-${{ parameters.environment }}"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: none
+
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download terraform-files"
+              inputs:
+                buildType: current
+                artifact: "terraform-files"
+                targetPath: "$(Pipeline.Workspace)/terraform-files"
+
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download tfplan"
+              inputs:
+                buildType: current
+                artifact: "tfplan"
+                targetPath: "$(Pipeline.Workspace)/tfplan"
+
+            - script: |
+                set -e
+                sudo apt-get update -y
+                sudo apt-get install -y jq curl
+                curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+              displayName: "Install Dependencies"
+
+            - task: TerraformInstaller@1
+              displayName: "Install Terraform"
+              inputs:
+                terraformVersion: "$(TERRAFORM_VERSION)"
+
+            - script: |
+                set +x
+                cat > "$(Pipeline.Workspace)/terraform-files/backend.tfvars" <<EOF
+                subscription_id      = "$(SUBSCRIPTION_ID_BACKEND)"
+                resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
+                storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
+                container_name       = "$(TF_CONTAINER_NAME)"
+                key                  = "$lnt-eip-{{ parameters.environment }}.tfstate"
+                use_azuread_auth     = true
+                EOF
+              displayName: "Write Backend Configuration"
+
+            - task: AzureCLI@2
+              displayName: "Terraform Init"
+              inputs:
+                azureSubscription: "svc-enterprise-integrations"
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  set -e
+                  az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1
+                  terraform init -backend-config=backend.tfvars -reconfigure
+
+            # Execute the saved Terraform plan to apply infrastructure changes
+            - task: AzureCLI@2
+              displayName: "Terraform Apply"
+              inputs:
+                azureSubscription: "svc-enterprise-integrations"
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+
+                  set -e
+                  az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1
+
+                  terraform apply -input=false -auto-approve "$(Pipeline.Workspace)/tfplan/tfplan"
