@@ -8,12 +8,13 @@
 # =========================
 
 # ===== Pipeline Triggers =====
-# Trigger pipeline automatically when code is pushed to main branch
+# Trigger pipeline automatically when code is pushed to any branch
 trigger:
   branches:
     include:
-      - integrations-networking
+      - '*'  # All branches will trigger prepare_terraform_release stage
 
+# PR trigger - Apply stage only runs on PR to main
 pr:
   autoCancel: true
   branches:
@@ -148,7 +149,7 @@ stages:
 # =========================================================
 # Stage 2: Prepare (Plan) - Terraform Planning and Artifact Creation
 # Purpose: Generate Terraform execution plan and package artifacts for deployment
-# Triggers: Only runs after merge to main branch (not on Pull Requests)
+# Triggers: Runs on all branches (feature branches and main)
 # Outputs: 
 #   - terraform-files artifact: Complete Terraform configuration
 #   - tfplan artifact: Binary Terraform plan file for exact deployment
@@ -156,8 +157,8 @@ stages:
 - stage: Prepare_Terraform_Release
   displayName: "Prepare Artifact for Release"
   dependsOn: Security_Scans
-
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/integrations-networking'), ne(variables['Build.Reason'], 'PullRequest'))
+  # Run on all branches except when it's a PR (PR only runs security scans + prepare, not apply)
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   jobs:
   - job: Deployment
     displayName: "Terraform Deployment"
@@ -357,14 +358,14 @@ stages:
 # =========================================================
 # Stage 3: Terraform Apply - Execute Infrastructure Changes
 # Purpose: Apply the saved Terraform plan to deploy infrastructure changes
-# Triggers: Only runs after successful Plan stage on main branch (not PRs)
+# Triggers: Only runs on Pull Requests targeting main branch
 # Security: Bound to Azure DevOps Environment for manual approvals and deployment gates
 # =========================================================
 - stage: Terraform_Apply
   displayName: "Terraform Apply"
   dependsOn: Prepare_Terraform_Release
-  # Only run if: Plan stage succeeded AND this is main branch build AND not a PR
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/integrations-networking'), ne(variables['Build.Reason'], 'PullRequest'))
+  # Only run on Pull Requests to main branch after successful Plan stage
+  condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'))
   jobs:
   - deployment: ApplyDeployment
     displayName: "Apply Terraform Changes"
