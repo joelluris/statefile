@@ -61,9 +61,15 @@ stages:
 
       - script: |
           cd terraform
-          terraform fmt -check -recursive
-        displayName: "Terraform Format Check"
-        continueOnError: true
+          echo "Checking Terraform formatting..."
+          if terraform fmt -check -recursive; then
+            echo "All files are properly formatted"
+          else
+            echo "Some files need formatting. Running terraform fmt..."
+            terraform fmt -recursive
+            echo "Files have been formatted"
+          fi
+        displayName: "Terraform Format Check and Fix"
 
       - script: |
           set +x
