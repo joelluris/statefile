@@ -23,11 +23,11 @@ pr:
 # ===== Pipeline Parameters & Variables =====
 # Runtime parameter allowing users to select which environment to deploy to
 parameters:
-- name: environment                                    # Parameter name used in code
-  displayName: "Please Select Deployment Environment"  # Label shown in GUI
-  type: string                                         # Data type
-  default: nonprod                                     # Default environment
-  values:                                              # The dropdown options
+- name: environment
+  displayName: "Please Select Deployment Environment"
+  type: string
+  default: int
+  values:
   - dev
   - stg
   - prd
