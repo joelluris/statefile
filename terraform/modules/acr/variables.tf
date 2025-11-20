@@ -1,25 +1,21 @@
-# variable "location" {
-#   type        = string
-#   description = "The location/region where the UAMIs will be created"
-# }
+variable "acr" {
+  type = map(object({
+    name                = string
+    location            = string
+    resource_group_name = string
+    sku                 = string
+    admin_enabled       = bool
+    tags                = map(string)
+  }))
+  description = "A map of Azure Container Registries to create"
+}
 
-# variable "resource_group_name" {
-#   type        = string
-#   description = "The name of the resource group"
-# }
+variable "private_endpoint_subnet_id" {
+  type        = string
+  description = "The subnet ID where private endpoints will be created"
+}
 
-# variable "tags" {
-#   type        = map(string)
-#   description = "A map of tags to apply to the UAMIs"
-#   default     = {}
-# }
-
-# variable "acr_name" {
-#   type        = string
-#   description = "The name of the Azure Container Registry"
-# }
-
-# variable "private_dns_zone_id" {
-#   type        = string
-#   description = "The ID of the private DNS zone to link with the ACR"
-# }
+variable "private_dns_zone_ids" {
+  type        = map(string)
+  description = "A map of private DNS zone IDs (key: acr, value: zone ID)"
+}

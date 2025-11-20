@@ -76,6 +76,24 @@ Example: When a pod needs to connect to my-database-service, it asks 10.96.0.10 
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 
+# Variable Declarations
+🙏🏾Parent Module (main.tf)
+The parent module is where you orchestrate and call other modules. It:
+
+🟡Declares variables that come from your tfvars files
+🟡Passes data to child modules
+🟡Connects outputs from one module to inputs of another
+🟡Transforms data before passing it to child modules
+
+🙏🏾Child Module (modules/vnet-peering)
+The child module is reusable code that does a specific job. It:
+
+🟡Declares variables it needs from whoever calls it
+🟡Doesn't know about your tfvars files
+🟡Creates resources based on the inputs it receives
+🟡Returns outputs for others to use
+🟡Example from your vnet-peering/variables.tf:
+
 
 # Errors
 

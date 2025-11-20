@@ -50,7 +50,7 @@ module "KeyVault" {
   tenant_id                  = var.tenant_id
   subscription_id            = var.subscription_id
   key_vault                  = var.key_vault
-  resource_group_output      = module.ResourceGroup.rg_ids["rg1"]
+  resource_group_output      = module.ResourceGroup.rg_ids["rg3"]
   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
   private_dns_zone_ids = {
     vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
@@ -59,6 +59,17 @@ module "KeyVault" {
   Arcon_PAM_IP      = var.Arcon_PAM_IP
   umbrella_ip_range = var.umbrella_ip_range
   AzureDevopsrunner = var.AzureDevopsrunner
+}
+
+module "acr" {
+  source                     = "./modules/acr"
+  acr                        = var.acr
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  private_dns_zone_ids = {
+    acr = data.azurerm_private_dns_zone.dns_zones["acr"].id
+  }
+
+  depends_on = [module.VirtualNetwork]
 }
 
 # module "LogAnalytics" {
@@ -113,7 +124,7 @@ module "peering" {
   source = "./modules/vnet-peering"
 
   providers = {
-    azurerm.LUNATE-SHARED_SERVICES = azurerm.LUNATE-SHARED_SERVICES
+    azurerm.connectivity = azurerm.connectivity
   }
 
   # Merge VNet details with IDs from VirtualNetwork module
@@ -123,10 +134,10 @@ module "peering" {
     })
   }
 
-  hub_vnet_name            = data.azurerm_virtual_network.hub.name
-  hub_resource_group_name  = data.azurerm_virtual_network.hub.resource_group_name
-  hub_vnet_id              = data.azurerm_virtual_network.hub.id
-  use_remote_gateways      = false
+  hub_vnet_name             = data.azurerm_virtual_network.hub.name
+  hub_resource_group_name   = data.azurerm_virtual_network.hub.resource_group_name
+  hub_vnet_id               = data.azurerm_virtual_network.hub.id
+  use_remote_gateways       = false
   hub_allow_gateway_transit = false
 
   depends_on = [
@@ -143,10 +154,10 @@ module "user_assigned_managed_identity" {
 
   # Pass resource IDs for scope resolution
   rg_ids              = module.ResourceGroup.rg_ids
-  key_vault_ids       = module.KeyVault.key_vault_ids # Add when KeyVault module is enabled
-  storage_account_ids = {}                            # Add when Storage module is enabled
-  acr_ids             = {}                            # Add when ACR module 
-  aks_ids             = {}                            # Add when AKS module is enabled
+  key_vault_ids       = module.KeyVault.key_vault_ids
+  storage_account_ids = {}                 # Add when Storage module is enabled
+  acr_ids             = module.acr.acr_ids # ACR module enabled
+  aks_ids             = {}                 # Add when AKS module is enabled
 
   depends_on = [module.ResourceGroup]
 }

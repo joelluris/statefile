@@ -24,14 +24,14 @@ all_resource_groups = {
       "Environment"          = "Integration"
     }
   }
-  # rg3 = {
-  #   name = "rg-mgmt-dev-uaen-01"
-  #   tags = {
-  #     "Application Owner"    = "IT"
-  #     "Business Criticality" = "Essential"
-  #     "Environment"          = "Integration"
-  #   }
-  # }
+  rg3 = {
+    name = "rg-lnt-eip-mgmt-nonprd-uaen-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integration"
+    }
+  }
   # rg4 = {
   #   name = "rg-app-sec-dev-uaen-01"
   #   tags = {
@@ -196,25 +196,6 @@ vnet_peering_remote = {
     allow_forwarded_traffic      = true
     allow_gateway_transit        = false
     use_remote_gateways          = false
-  }
-}
-
-peering_configurations = {
-  peer1 = {
-    spoke_vnet_key                = "vn1"
-    peering_name_spoke_to_hub     = "peer-nonprd-aks-to-hub"
-    peering_name_hub_to_spoke     = "peer-hub-to-nonprd-aks"
-    spoke_resource_group_name     = "rg-lnt-eip-aks-nonprd-uaen-01"
-    use_remote_gateways           = false
-    hub_allow_gateway_transit     = false
-  },
-  peer2 = {
-    spoke_vnet_key                = "vn2"
-    peering_name_spoke_to_hub     = "peer-nonprd-vm-to-hub"
-    peering_name_hub_to_spoke     = "peer-hub-to-nonprd-vm"
-    spoke_resource_group_name     = "rg-lnt-eip-vm-nonprd-uaen-01"
-    use_remote_gateways           = false
-    hub_allow_gateway_transit     = false
   }
 }
 
@@ -595,6 +576,21 @@ user_assigned_managed_identity = {
       #   scope_type           = "azure_container_registry"
       #   scope                = ""
       # }
+    }
+  }
+}
+
+acr = {
+  acr1 = {
+    name                = "acrlnteipnonprd01"
+    resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location            = "UAE North"
+    sku                 = "Basic"
+    admin_enabled       = false
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integrations"
     }
   }
 }

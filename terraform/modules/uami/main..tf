@@ -42,7 +42,7 @@ resource "azurerm_role_assignment" "uami_roles" {
     each.value.scope_type == "resource_group" ? var.rg_ids[each.value.scope_name] :
     each.value.scope_type == "key_vault" ? var.key_vault_ids[each.value.scope_name] :
     # each.value.scope_type == "storage_account" ? var.storage_account_ids[each.value.scope_name] :
-    # each.value.scope_type == "azure_container_registry" ? var.acr_ids[each.value.scope_name] :
+    each.value.scope_type == "azure_container_registry" ? var.acr_ids[each.value.scope_name] :
     each.value.scope_type == "user_assigned_managed_identity" ? local.uami_id_map[each.value.scope_name] :
     each.value.scope_name # Fallback to the scope name as-is if it's already an ID
   )

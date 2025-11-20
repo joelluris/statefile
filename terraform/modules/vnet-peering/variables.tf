@@ -2,16 +2,16 @@
 # VNet Peering Module Variables - Hub and Spoke Topology
 # ==========================================================================================
 
-variable "peering_configurations" {
-  description = "Map of peering configurations"
+variable "vnets" {
+  description = "Map of VNets with IDs merged from parent module"
   type = map(object({
-    peering_name_spoke_to_hub = string
-    peering_name_hub_to_spoke = string
-    spoke_vnet_name           = string
-    spoke_resource_group_name = string
-    spoke_vnet_id             = string
-    use_remote_gateways       = bool
-    hub_allow_gateway_transit = bool
+    name     = string
+    rg_name  = string
+    cidr     = list(string)
+    dns      = list(string)
+    tags     = map(string)
+    subnets  = any
+    vnet_id  = string  # Added by parent module
   }))
 }
 
@@ -28,4 +28,16 @@ variable "hub_resource_group_name" {
 variable "hub_vnet_id" {
   description = "Resource ID of the hub virtual network"
   type        = string
+}
+
+variable "use_remote_gateways" {
+  description = "Allow spoke to use hub's VPN/ExpressRoute gateways"
+  type        = bool
+  default     = false
+}
+
+variable "hub_allow_gateway_transit" {
+  description = "Allow hub to share its gateways with spoke"
+  type        = bool
+  default     = false
 }
