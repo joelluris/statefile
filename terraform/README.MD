@@ -80,7 +80,7 @@ Example: When a pod needs to connect to my-database-service, it asks 10.96.0.10 
 🙏🏾Parent Module (main.tf)
 The parent module is where you orchestrate and call other modules. It:
 
-🟡Declares variables that come from your tfvars files
+🟡Declares variables.tf in main that come from your tfvars files
 🟡Passes data to child modules
 🟡Connects outputs from one module to inputs of another
 🟡Transforms data before passing it to child modules
