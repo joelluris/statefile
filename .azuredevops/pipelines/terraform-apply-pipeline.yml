@@ -89,6 +89,7 @@ stages:
           } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
         displayName: "Append Auth Variables to tfvars"
 
+      # Initialize Terraform with retries
       - task: AzureCLI@2
         displayName: "Terraform Init"
         inputs:
@@ -166,10 +167,23 @@ stages:
           artifact: "tfplan-binary"
           publishLocation: "pipeline"
 
+      - script: |
+          set -e
+          mkdir -p "$(Build.ArtifactStagingDirectory)/terraform-files"
+          rsync -a --delete \
+            --exclude '.terraform/' \
+            --exclude 'tfplan' \
+            --exclude 'tfplan.txt' \
+            --exclude '*.tfstate' \
+            --exclude '*.tfstate.backup' \
+            "$(Build.SourcesDirectory)/terraform/" \
+            "$(Build.ArtifactStagingDirectory)/terraform-files/"
+        displayName: "Stage terraform files (exclude .terraform)"
+
       - task: PublishPipelineArtifact@1
         displayName: "Publish terraform files"
         inputs:
-          targetPath: "$(Build.SourcesDirectory)/terraform"
+          targetPath: "$(Build.ArtifactStagingDirectory)/terraform-files"
           artifact: "terraform-files"
           publishLocation: "pipeline"
 
