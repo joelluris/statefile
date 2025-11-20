@@ -116,39 +116,22 @@ module "peering" {
     azurerm.connectivity = azurerm.connectivity
   }
 
-  peering_name_spoke_to_hub = "peer-nonprd-aks-to-hub"
-  peering_name_hub_to_spoke = "peer-hub-to-nonprd-aks"
-  spoke_vnet_name           = module.VirtualNetwork.vnet_details_output["vn1"].name
-  spoke_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
-  spoke_vnet_id             = module.VirtualNetwork.vnet_details_output["vn1"].id
-  hub_vnet_name             = data.azurerm_virtual_network.hub.name
-  hub_resource_group_name   = data.azurerm_virtual_network.hub.resource_group_name
-  hub_vnet_id               = data.azurerm_virtual_network.hub.id
-  use_remote_gateways       = false
-  hub_allow_gateway_transit = false
-
-  depends_on = [
-    module.VirtualNetwork
-  ]
-}
-
-module "peering2" {
-  source = "./modules/vnet-peering"
-
-  providers = {
-    azurerm.connectivity = azurerm.connectivity
+  # Build peering configurations dynamically from tfvars
+  peering_configurations = {
+    for k, v in var.peering_configurations : k => {
+      peering_name_spoke_to_hub = v.peering_name_spoke_to_hub
+      peering_name_hub_to_spoke = v.peering_name_hub_to_spoke
+      spoke_vnet_name           = module.VirtualNetwork.vnet_details_output[v.spoke_vnet_key].name
+      spoke_resource_group_name = v.spoke_resource_group_name
+      spoke_vnet_id             = module.VirtualNetwork.vnet_details_output[v.spoke_vnet_key].id
+      use_remote_gateways       = v.use_remote_gateways
+      hub_allow_gateway_transit = v.hub_allow_gateway_transit
+    }
   }
 
-  peering_name_spoke_to_hub = "peer-nonprd-vm-to-hub"
-  peering_name_hub_to_spoke = "peer-hub-to-nonprd-vm"
-  spoke_vnet_name           = module.VirtualNetwork.vnet_details_output["vn2"].name
-  spoke_resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
-  spoke_vnet_id             = module.VirtualNetwork.vnet_details_output["vn2"].id
-  hub_vnet_name             = data.azurerm_virtual_network.hub.name
-  hub_resource_group_name   = data.azurerm_virtual_network.hub.resource_group_name
-  hub_vnet_id               = data.azurerm_virtual_network.hub.id
-  use_remote_gateways       = false
-  hub_allow_gateway_transit = false
+  hub_vnet_name           = data.azurerm_virtual_network.hub.name
+  hub_resource_group_name = data.azurerm_virtual_network.hub.resource_group_name
+  hub_vnet_id             = data.azurerm_virtual_network.hub.id
 
   depends_on = [
     module.VirtualNetwork

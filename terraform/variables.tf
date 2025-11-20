@@ -151,6 +151,19 @@ variable "vnet_peering_remote" {
   default = {}
 }
 
+variable "peering_configurations" {
+  description = "Map of peering configurations for separate peering module"
+  type = map(object({
+    spoke_vnet_key                = string
+    peering_name_spoke_to_hub     = string
+    peering_name_hub_to_spoke     = string
+    spoke_resource_group_name     = string
+    use_remote_gateways           = bool
+    hub_allow_gateway_transit     = bool
+  }))
+  default = {}
+}
+
 # ==============================================================================
 # KEY VAULT MODULE VARIABLES
 # ==============================================================================

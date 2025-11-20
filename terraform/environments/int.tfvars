@@ -199,6 +199,25 @@ vnet_peering_remote = {
   }
 }
 
+peering_configurations = {
+  peer1 = {
+    spoke_vnet_key                = "vn1"
+    peering_name_spoke_to_hub     = "peer-nonprd-aks-to-hub"
+    peering_name_hub_to_spoke     = "peer-hub-to-nonprd-aks"
+    spoke_resource_group_name     = "rg-lnt-eip-aks-nonprd-uaen-01"
+    use_remote_gateways           = false
+    hub_allow_gateway_transit     = false
+  },
+  peer2 = {
+    spoke_vnet_key                = "vn2"
+    peering_name_spoke_to_hub     = "peer-nonprd-vm-to-hub"
+    peering_name_hub_to_spoke     = "peer-hub-to-nonprd-vm"
+    spoke_resource_group_name     = "rg-lnt-eip-vm-nonprd-uaen-01"
+    use_remote_gateways           = false
+    hub_allow_gateway_transit     = false
+  }
+}
+
 routetables = {
   rt1 = {
     name                          = "rt-nonprd-mft-uaen-01"
