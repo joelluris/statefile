@@ -1,9 +1,6 @@
 name: 'MyCustomPipeline-$(Date:yyyyMMdd)$(Rev:.r)'
 
-trigger:
-  branches:
-    include:
-      - '*'  # All branches will trigger prepare_terraform_release stage
+trigger: none
 
 # PR trigger - Apply stage only runs on PR to main
 pr:
@@ -63,8 +60,8 @@ stages:
 - stage: Install_Terraform
   displayName: "Install Terraform"
   jobs:
-  - job: SecurityScanJob
-    displayName: "Terraform Security Scan Job"
+  - job: InstallTerraformJob
+    displayName: "Terraform Installation"
     steps:
       - checkout: self
       
@@ -149,15 +146,29 @@ stages:
           scriptLocation: "inlineScript"
           workingDirectory: "$(Build.SourcesDirectory)/terraform"
           inlineScript: |
-            # Exit on any error
             set -e
             az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
             export ARM_TENANT_ID=$(TENANT_ID)
-            export TF_IN_AUTOMATION=1  # Optimize Terraform for CI/CD environments
+            export TF_IN_AUTOMATION=1
             echo "Account for backend (state storage):"
             az account show --query "{name:name, sub:id, tenant:tenantId}" -o tsv
             terraform -version
-            terraform init -backend-config=backend.tfvars -reconfigure
+            
+            # Retry terraform init up to 3 times to handle transient network errors
+            for i in 1 2 3; do
+              echo "Terraform init attempt $i of 3..."
+              if terraform init -backend-config=backend.tfvars -reconfigure; then
+                echo "Terraform init succeeded"
+                break
+              else
+                if [ $i -eq 3 ]; then
+                  echo "Terraform init failed after 3 attempts"
+                  exit 1
+                fi
+                echo "Terraform init failed, waiting 10 seconds before retry..."
+                sleep 10
+              fi
+            done
 
       # Step 2: Validate Terraform configuration syntax and consistency
       - task: AzureCLI@2
@@ -302,7 +313,22 @@ stages:
                   az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
                   export ARM_TENANT_ID=$(TENANT_ID)
                   export TF_IN_AUTOMATION=1
-                  terraform init -backend-config=backend.tfvars -reconfigure
+                  
+                  # Retry terraform init up to 3 times to handle transient network errors
+                  for i in 1 2 3; do
+                    echo "Terraform init attempt $i of 3..."
+                    if terraform init -backend-config=backend.tfvars -reconfigure; then
+                      echo "Terraform init succeeded"
+                      break
+                    else
+                      if [ $i -eq 3 ]; then
+                        echo "Terraform init failed after 3 attempts"
+                        exit 1
+                      fi
+                      echo "Terraform init failed, waiting 10 seconds before retry..."
+                      sleep 10
+                    fi
+                  done
 
             # Execute the saved Terraform plan to apply infrastructure changes
             - task: AzureCLI@2
