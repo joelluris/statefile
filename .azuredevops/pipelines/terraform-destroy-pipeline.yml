@@ -1,0 +1,270 @@
+name: Terraform Destroy Pipeline
+
+trigger: none  # Manual trigger only
+
+pr: none  # No PR triggers
+
+parameters:
+- name: environment
+  displayName: "Environment to Destroy"
+  type: string
+  default: int
+  values:
+  - dev
+  - stg
+  - prd
+  - int
+- name: confirmDestroy
+  displayName: "Type 'DESTROY' to confirm"
+  type: string
+  default: ""
+
+variables:
+- template: ../templates/variables/common-variables.yml
+- template: ../templates/variables/backend-variables.yml
+- ${{ if eq(parameters.environment, 'dev') }}:
+  - template: ../templates/variables/dev-variables.yml
+- ${{ if eq(parameters.environment, 'stg') }}:
+  - template: ../templates/variables/stg-variables.yml
+- ${{ if eq(parameters.environment, 'prd') }}:
+  - template: ../templates/variables/prd-variables.yml
+- ${{ if eq(parameters.environment, 'int') }}:
+  - template: ../templates/variables/int-variables.yml
+
+pool:
+  name: WSL-Agent
+  demands:
+  - Agent.Name -equals Dell-Predator-G15-5530
+
+stages:
+- stage: Plan_Destroy
+  displayName: "Terraform Destroy Plan"
+  jobs:
+  - job: PlanDestroyJob
+    displayName: "Generate Destroy Plan"
+    steps:
+      - checkout: self
+
+      - script: |
+          if [ "${{ parameters.confirmDestroy }}" != "DESTROY" ]; then
+            echo "##[error]Confirmation failed. You must type 'DESTROY' to proceed."
+            exit 1
+          fi
+          echo "Confirmation received. Proceeding with destroy plan..."
+        displayName: "Confirm Destroy Action"
+
+      - script: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y curl
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"
+
+      - script: |
+          set +x
+          cat > "$(Build.SourcesDirectory)/terraform/backend.tfvars" <<EOF
+          subscription_id      = "$(SUBSCRIPTION_ID_BACKEND)"
+          resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
+          storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
+          container_name       = "$(TF_CONTAINER_NAME)"
+          key                  = "${{ parameters.environment }}.tfstate"
+          use_azuread_auth     = true
+          EOF
+        displayName: "Write Backend Configuration"
+
+      - script: |
+          set +x
+          if [ ! -f "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars" ]; then
+            echo "ERROR: environments/${{ parameters.environment }}.tfvars does not exist"
+            exit 1
+          fi
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+        displayName: "Append Auth Variables to tfvars"
+
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            # Retry terraform init up to 3 times
+            for i in 1 2 3; do
+              echo "Terraform init attempt $i of 3..."
+              if terraform init -backend-config=backend.tfvars -reconfigure; then
+                echo "Terraform init succeeded"
+                break
+              else
+                if [ $i -eq 3 ]; then
+                  echo "Terraform init failed after 3 attempts"
+                  exit 1
+                fi
+                echo "Waiting 10 seconds before retry..."
+                sleep 10
+              fi
+            done
+
+      - task: AzureCLI@2
+        displayName: "Terraform Plan -destroy"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            terraform plan -destroy \
+              -var-file="environments/${{ parameters.environment }}.tfvars" \
+              -input=false \
+              -out=tfplan-destroy
+            
+            terraform show -no-color tfplan-destroy > tfplan-destroy.txt
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish destroy plan text"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/tfplan-destroy.txt"
+          artifact: "tfplan-destroy-text"
+          publishLocation: "pipeline"
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish destroy plan binary"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/tfplan-destroy"
+          artifact: "tfplan-destroy-binary"
+          publishLocation: "pipeline"
+
+      - script: |
+          set -e
+          mkdir -p "$(Build.ArtifactStagingDirectory)/terraform-files"
+          rsync -a --delete \
+            --exclude '.terraform/' \
+            --exclude 'tfplan*' \
+            --exclude '*.tfstate' \
+            --exclude '*.tfstate.backup' \
+            "$(Build.SourcesDirectory)/terraform/" \
+            "$(Build.ArtifactStagingDirectory)/terraform-files/"
+        displayName: "Stage terraform files (exclude .terraform)"
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish terraform files"
+        inputs:
+          targetPath: "$(Build.ArtifactStagingDirectory)/terraform-files"
+          artifact: "terraform-files"
+          publishLocation: "pipeline"
+
+- stage: Destroy
+  displayName: "Terraform Destroy"
+  dependsOn: Plan_Destroy
+  condition: succeeded()
+  jobs:
+  - deployment: DestroyDeployment
+    displayName: "Destroy Infrastructure"
+    environment: "MR-Approval-${{ parameters.environment }}-DESTROY"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: none
+
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download terraform-files"
+              inputs:
+                buildType: current
+                artifact: "terraform-files"
+                targetPath: "$(Pipeline.Workspace)/terraform-files"
+
+            - task: DownloadPipelineArtifact@2
+              displayName: "Download destroy plan"
+              inputs:
+                buildType: current
+                artifact: "tfplan-destroy-binary"
+                targetPath: "$(Pipeline.Workspace)/tfplan"
+
+            - script: |
+                set -e
+                sudo apt-get update -y
+                sudo apt-get install -y curl
+                curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+              displayName: "Install Dependencies"
+
+            - task: TerraformInstaller@1
+              displayName: "Install Terraform"
+              inputs:
+                terraformVersion: "$(TERRAFORM_VERSION)"
+
+            - script: |
+                set +x
+                cat > "$(Pipeline.Workspace)/terraform-files/backend.tfvars" <<EOF
+                subscription_id      = "$(SUBSCRIPTION_ID_BACKEND)"
+                resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
+                storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
+                container_name       = "$(TF_CONTAINER_NAME)"
+                key                  = "${{ parameters.environment }}.tfstate"
+                use_azuread_auth     = true
+                EOF
+              displayName: "Write Backend Configuration"
+
+            - task: AzureCLI@2
+              displayName: "Terraform Init"
+              inputs:
+                azureSubscription: "svc-enterprise-integrations"
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  set -e
+                  az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1
+                  
+                  # Retry terraform init up to 3 times
+                  for i in 1 2 3; do
+                    echo "Terraform init attempt $i of 3..."
+                    if terraform init -backend-config=backend.tfvars -reconfigure; then
+                      echo "Terraform init succeeded"
+                      break
+                    else
+                      if [ $i -eq 3 ]; then
+                        echo "Terraform init failed after 3 attempts"
+                        exit 1
+                      fi
+                      echo "Waiting 10 seconds before retry..."
+                      sleep 10
+                    fi
+                  done
+
+            - task: AzureCLI@2
+              displayName: "Terraform Destroy"
+              inputs:
+                azureSubscription: "svc-enterprise-integrations"
+                scriptType: "bash"
+                scriptLocation: "inlineScript"
+                workingDirectory: "$(Pipeline.Workspace)/terraform-files"
+                inlineScript: |
+                  set -e
+                  az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+                  export ARM_TENANT_ID=$(TENANT_ID)
+                  export TF_IN_AUTOMATION=1
+                  
+                  echo "##[warning]DESTROYING ALL INFRASTRUCTURE IN ${{ parameters.environment }} ENVIRONMENT"
+                  terraform apply -input=false -auto-approve "$(Pipeline.Workspace)/tfplan/tfplan-destroy"
+                  echo "##[section]Infrastructure destruction completed"
