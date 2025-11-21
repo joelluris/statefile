@@ -1,13 +1,3 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-  }
-}
-
-# Azure Container Registry with Private Endpoint
 resource "azurerm_container_registry" "acr" {
   for_each                      = var.acr
   name                          = each.value.name
