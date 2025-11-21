@@ -95,6 +95,7 @@ stages:
           } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
         displayName: "Append Auth Variables to tfvars"
 
+      # Terraform Init with Retry
       - task: AzureCLI@2
         displayName: "Terraform Init"
         inputs:
@@ -124,6 +125,7 @@ stages:
               fi
             done
 
+      # Terraform Validate
       - task: AzureCLI@2
         displayName: "Terraform Validate"
         inputs:
@@ -138,6 +140,7 @@ stages:
             export TF_IN_AUTOMATION=1
             terraform validate
 
+      # Terraform Plan
       - task: AzureCLI@2
         displayName: "Terraform Plan"
         inputs:
