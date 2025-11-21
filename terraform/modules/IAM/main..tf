@@ -27,4 +27,3 @@ resource "azurerm_role_assignment" "security_admin" {
   role_definition_name = "Security Admin"
   principal_id         = azuread_group.azure_security_admins.object_id
 }
-

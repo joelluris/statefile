@@ -32,14 +32,14 @@ all_resource_groups = {
       "Environment"          = "Integration"
     }
   }
-  # rg4 = {
-  #   name = "rg-app-sec-dev-uaen-01"
-  #   tags = {
-  #     "Application Owner"    = "IT"
-  #     "Business Criticality" = "Essential"
-  #     "Environment"          = "Integration"
-  #   }
-  # }
+  rg4 = {
+    name = "rg-lnt-eip-mft-nonprd-uaen-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integration"
+    }
+  }
 }
 
 vnets = {
@@ -82,6 +82,7 @@ vnets = {
       }
     }
   }
+
   vn2 = {
     name    = "vnet-lnt-vm-nonprd-uaen-01"
     rg_name = "rg-lnt-eip-vm-nonprd-uaen-01"
@@ -596,5 +597,16 @@ acr = {
 }
 
 aks = {
-  aks
+  aks1 = {
+    name                   = "aks-lnt-eip-nonprd-uaen-01"
+    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location               = "UAE North"
+    kubernetes_version     = "1.26.9"
+    dns_prefix             = "aks-lnt-eip-nonprd-uaen-01"
+    node_count             = 1
+    node_vm_size           = "Standard_D4s_v3"
+    node_os_disk_size_gb   = 100
+    linux_admin_username   = "azureuser"
+    enable_azure_ad        = true
+  }
 }

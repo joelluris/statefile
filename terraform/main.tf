@@ -162,3 +162,25 @@ module "user_assigned_managed_identity" {
   depends_on = [module.ResourceGroup]
 }
 
+
+module "aks" {
+  source = "./modules/aks"
+
+  providers = {
+    azurerm.connectivity = azurerm.connectivity
+  }
+
+  location                   = var.location
+  tenant_id                  = var.tenant_id
+  subscription_id            = var.subscription_id
+  aks_clusters               = var.aks_clusters
+  rg_details_output          = module.ResourceGroup.rg_details_output
+  snet_details_output        = module.VirtualNetwork.snet_details_output
+  key_vault_ids              = module.KeyVault.key_vault_ids
+  acr_ids                    = module.acr.acr_ids
+  user_assigned_identity     = module.user_assigned_managed_identity.user_assigned_managed_identities
+
+  depends_on = [
+    module.UserAssignedManagedIdentity
+  ]
+}
