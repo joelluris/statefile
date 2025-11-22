@@ -40,6 +40,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   private_cluster_enabled             = each.value.private_cluster_enabled
   private_dns_zone_id                 = var.private_dns_zone_id != null ? var.private_dns_zone_id : "System"
   private_cluster_public_fqdn_enabled = each.value.private_cluster_enabled
+  
+  # azure_policy enabled = true will auto-create an identity named azurepolicy-... 
   azure_policy_enabled                = each.value.azure_policy_enabled
 
   default_node_pool {
@@ -118,7 +120,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   kubelet_identity {
-    user_assigned_identity_id = var.kubelet_identity_ids[each.key]
+    client_id                 = var.kubelet_identity_details[each.key].client_id
+    object_id                 = var.kubelet_identity_details[each.key].principal_id
+    user_assigned_identity_id = var.kubelet_identity_details[each.key].id
   }
 
   storage_profile {

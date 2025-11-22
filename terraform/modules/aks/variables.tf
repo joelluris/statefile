@@ -64,7 +64,11 @@ variable "admin_group_object_ids" {
   default     = []
 }
 
-variable "kubelet_identity_ids" {
-  type        = map(string)
-  description = "Map of User Assigned Managed Identity IDs for AKS kubelet identities"
+variable "kubelet_identity_details" {
+  type = map(object({
+    id           = string
+    client_id    = string
+    principal_id = string
+  }))
+  description = "Map of User Assigned Managed Identity details for AKS kubelet identities"
 }

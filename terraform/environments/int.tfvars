@@ -532,11 +532,11 @@ user_assigned_managed_identity = {
       #   scope_type           = "resource_group"
       #   scope                = "rg1"
       # }
-      ra2 = {
-        role_definition_name = "Key Vault Secrets User"
-        scope_type           = "key_vault"
-        scope                = "kv-lnt-nonprd-uaen-01"
-      }
+      # ra2 = {
+      #   role_definition_name = "Key Vault Secrets User"
+      #   scope_type           = "key_vault"
+      #   scope                = "kv-lnt-nonprd-uaen-01"
+      # }
       # ra3 = {
       #   role_definition_name = "AcrPush"
       #   scope_type           = "azure_container_registry"
@@ -564,11 +564,11 @@ user_assigned_managed_identity = {
         scope_type           = "resource_group"
         scope                = "rg1"
       }
-      # ra3 = {
-      #   role_definition_name = "Private DNS Zone Contributor"
-      #   scope_type           = "private_dns_zone"
-      #   scope                = ""
-      # }
+      ra3 = {
+        role_definition_name = "Private DNS Zone Contributor"
+        scope_type           = "private_dns_zone"
+        scope                = "/subscriptions/2bb0667b-d883-4406-b19a-a3083ba05bd8/resourceGroups/rg-hub-dns-uaenorth/providers/Microsoft.Network/privateDnsZones/privatelink.uaenorth.azmk8s.io"
+      }
     }
   },
   kubelet_identity = {
@@ -609,7 +609,7 @@ aks = {
     sku_tier                            = "Free"
     private_cluster_enabled             = true
     private_cluster_public_fqdn_enabled = false
-    azure_policy_enabled                = true
+    azure_policy_enabled                = false  # Disable to prevent auto-created azurepolicy identity
     only_critical_addons_enabled        = true
     node_vm_size                        = "Standard_D2s_v3"
     node_os_disk_size_gb                = 100

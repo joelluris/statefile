@@ -44,33 +44,33 @@ module "VirtualNetwork" {
 #   }
 # }
 
-module "KeyVault" {
-  source                     = "./modules/KeyVault"
-  location                   = var.location
-  tenant_id                  = var.tenant_id
-  subscription_id            = var.subscription_id
-  key_vault                  = var.key_vault
-  resource_group_output      = module.ResourceGroup.rg_ids["rg3"]
-  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = {
-    vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
-  }
+# module "KeyVault" {
+#   source                     = "./modules/KeyVault"
+#   location                   = var.location
+#   tenant_id                  = var.tenant_id
+#   subscription_id            = var.subscription_id
+#   key_vault                  = var.key_vault
+#   resource_group_output      = module.ResourceGroup.rg_ids["rg3"]
+#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+#   private_dns_zone_ids = {
+#     vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
+#   }
 
-  Arcon_PAM_IP      = var.Arcon_PAM_IP
-  umbrella_ip_range = var.umbrella_ip_range
-  AzureDevopsrunner = var.AzureDevopsrunner
-}
+#   Arcon_PAM_IP      = var.Arcon_PAM_IP
+#   umbrella_ip_range = var.umbrella_ip_range
+#   AzureDevopsrunner = var.AzureDevopsrunner
+# }
 
-module "acr" {
-  source                     = "./modules/acr"
-  acr                        = var.acr
-  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = {
-    acr = data.azurerm_private_dns_zone.dns_zones["acr"].id
-  }
+# module "acr" {
+#   source                     = "./modules/acr"
+#   acr                        = var.acr
+#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+#   private_dns_zone_ids = {
+#     acr = data.azurerm_private_dns_zone.dns_zones["acr"].id
+#   }
 
-  depends_on = [module.VirtualNetwork]
-}
+#   depends_on = [module.VirtualNetwork]
+# }
 
 # module "LogAnalytics" {
 #   source                = "./modules/LogAnalytics"
@@ -154,9 +154,9 @@ module "user_assigned_managed_identity" {
 
   # Pass resource IDs for scope resolution
   rg_ids              = module.ResourceGroup.rg_ids
-  key_vault_ids       = module.KeyVault.key_vault_ids
+  key_vault_ids       = {}                 # Add when Key Vault module is enabled
   storage_account_ids = {}                 # Add when Storage module is enabled
-  acr_ids             = module.acr.acr_ids # ACR module enabled
+  acr_ids             = {} # ACR IDs for role assignments
   aks_ids             = {}                 # Don't pass AKS IDs to avoid circular dependency
 
   depends_on = [module.ResourceGroup]
@@ -166,8 +166,11 @@ module "aks" {
   source = "./modules/aks"
   aks    = var.aks
 
-  vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"]
-  subnet_ids          = module.VirtualNetwork.subnet_ids
+  # Subnet configuration:
+  # - vnet_subnet_id: Direct subnet ID for the default/system node pool
+  # - subnet_ids: Map of ALL subnets - allows additional node pools to reference subnets by key (e.g., "vn1.sn2")
+  vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"] # Default node pool subnet (ND subnet)
+  subnet_ids          = module.VirtualNetwork.subnet_ids            # Map for additional node pool lookups
   private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["aks"].id
 
   # Control plane identity (kubernetes_identity)
@@ -176,8 +179,8 @@ module "aks" {
   }
 
   # Kubelet identity for pulling images and accessing resources
-  kubelet_identity_ids = {
-    for k, v in var.aks : k => module.user_assigned_managed_identity.uami_ids["kubelet_identity"]
+  kubelet_identity_details = {
+    for k, v in var.aks : k => module.user_assigned_managed_identity.uami_details["kubelet_identity"]
   }
 
   admin_group_object_ids = var.admin_group_object_ids
