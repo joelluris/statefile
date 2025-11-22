@@ -16,7 +16,7 @@ resource "azurerm_key_vault" "kv" {
   depends_on                      = [var.resource_group_output]
 
   network_acls {
-    default_action = "Deny"
+    default_action = "Allow"
     bypass         = "AzureServices"
     ip_rules       = local.combined_ip_ranges
   }
@@ -56,6 +56,7 @@ resource "azurerm_private_endpoint" "kv_pe" {
 resource "azurerm_disk_encryption_set" "kv_des" {
   name                = var.disk_encryption_set_name
   location            = var.location
+  # [0] gets the first key from the key_vault map (e.g., "kv01")
   resource_group_name = var.key_vault[keys(var.key_vault)[0]].kv_rg_name
   key_vault_key_id    = azurerm_key_vault_key.kv_key.id
 
@@ -68,8 +69,10 @@ resource "azurerm_disk_encryption_set" "kv_des" {
 
 # Grant the Disk Encryption Set access to the Key Vault Key
 resource "azurerm_key_vault_access_policy" "des_policy" {
+  # [0] gets the first key vault from the map (since we use for_each on key_vault)
   key_vault_id = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
   tenant_id    = var.tenant_id
+  # [0] gets the first (and only) identity from the identity block list
   object_id    = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
 
   key_permissions = [
@@ -83,6 +86,7 @@ resource "azurerm_key_vault_access_policy" "des_policy" {
 
 resource "azurerm_key_vault_key" "kv_key" {
   name         = var.key_vault_key_name
+  # [0] gets the first key vault from the map to store the encryption key
   key_vault_id = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
 
   key_type = "RSA"
@@ -97,4 +101,12 @@ resource "azurerm_key_vault_key" "kv_key" {
   ]
 
   depends_on = [azurerm_key_vault.kv]
+}
+
+resource "azurerm_role_assignment" "this" {
+  # [0] gets the first (and only) system-assigned identity's principal_id
+  principal_id         = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
+  # [0] gets the first key vault from the map
+  scope                = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
+  role_definition_name = "Key Vault Crypto Service Encryption User"
 }
