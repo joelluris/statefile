@@ -414,9 +414,6 @@ key_vault = {
   }
 }
 
-key_vault_key_name       = "des-key-nonprod"
-disk_encryption_set_name = "des-lnt-eip-nonprod-01"
-
 # loganalytics = {
 #   law01 = {
 #     name                = "law-dev-uaen-01"
