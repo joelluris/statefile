@@ -43,3 +43,9 @@ variable "AzureDevopsrunner" {
     "4.161.33.244/32"  # Azure DevOps Runner IP
   ]
 }
+
+
+variable "soft_delete_enabled" {
+  type = bool
+  default = false
+}

@@ -4,24 +4,25 @@ locals {
   node_pools = flatten([
     for aks_key, aks in var.aks : [
       for np_key, np in aks.node_pools : {
-        aks_key              = aks_key
-        np_key               = np_key
-        name                 = np.name
+        aks_key                     = aks_key
+        np_key                      = np_key
+        name                        = np.name
         temporary_name_for_rotation = np.temporary_name_for_rotation
-        zones                = np.zones
-        vm_size              = np.vm_size
-        max_count            = np.max_count
-        max_pods             = np.max_pods
-        min_count            = np.min_count
-        os_disk_size_gb      = np.os_disk_size_gb
-        os_disk_type         = np.os_disk_type
-        priority             = np.priority
-        spot_max_price       = np.spot_max_price
-        eviction_policy      = np.eviction_policy
-        vnet_subnet_id       = np.vnet_subnet_id
-        node_labels          = np.node_labels
-        node_taints          = np.node_taints
-        tags                 = np.tags
+        zones                       = np.zones
+        vm_size                     = np.vm_size
+        max_count                   = np.max_count
+        max_pods                    = np.max_pods
+        min_count                   = np.min_count
+        os_disk_size_gb             = np.os_disk_size_gb
+        os_disk_type                = np.os_disk_type
+        priority                    = np.priority
+        spot_max_price              = np.spot_max_price
+        eviction_policy             = np.eviction_policy
+        vnet_subnet_id              = np.vnet_subnet_id
+        # pod_subnet_id        = np.pod_subnet_id
+        node_labels = np.node_labels
+        node_taints = np.node_taints
+        tags        = np.tags
       }
     ]
   ])
@@ -35,21 +36,21 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = each.value.dns_prefix
   tags                = each.value.tags
 
-  sku_tier                            = "Free"
-  private_cluster_enabled             = true
-  private_dns_zone_id                 = var.private_dns_zone_id
-  private_cluster_public_fqdn_enabled = false
-  azure_policy_enabled                = true
+  sku_tier                            = each.value.sku_tier
+  private_cluster_enabled             = each.value.private_cluster_enabled
+  private_dns_zone_id                 = var.private_dns_zone_id != null ? var.private_dns_zone_id : "System"
+  private_cluster_public_fqdn_enabled = each.value.private_cluster_enabled
+  azure_policy_enabled                = each.value.azure_policy_enabled
 
   default_node_pool {
     name                         = "system01"
     temporary_name_for_rotation  = "system01b"
-    only_critical_addons_enabled = true
+    only_critical_addons_enabled = each.value.only_critical_addons_enabled
     vm_size                      = each.value.node_vm_size
     os_disk_size_gb              = each.value.node_os_disk_size_gb
-    auto_scaling_enabled         = false
+    auto_scaling_enabled         = each.value.auto_scaling_enabled
     node_count                   = each.value.aks_node_count
-    max_pods                     = 64
+    max_pods                     = each.value.max_pods
     vnet_subnet_id               = var.vnet_subnet_id
     zones                        = [1, 2, 3]
   }

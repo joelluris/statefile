@@ -184,4 +184,3 @@ module "aks" {
 
   depends_on = [module.VirtualNetwork, module.user_assigned_managed_identity]
 }
-

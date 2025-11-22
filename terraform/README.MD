@@ -123,3 +123,15 @@ terraform destroy -var-file="environments/nonprod.tfvars" -auto-approve
 
 terraform plan -var-file="environments/nonprod.tfvars" -out nonprod.tfplan
 terraform show -no-color nonprod.tfplan > nonprod-plan.txt
+
+#=================== searching a plan
+terraform plan -var-file="environments/int.tfvars" | Select-String -Pattern "key_vault|keyvault" -Context 2,5
+
+terraform plan -var-file="environments/int.tfvars" -out=tfplan.binary
+terraform show tfplan.binary | Select-String -Pattern "azurerm_key_vault" -Context 3,10
+
+# Find resources being created
+terraform plan -var-file="environments/int.tfvars" | Select-String -Pattern "azurerm_key_vault.*will be created"
+
+# Find all Key Vault related changes
+terraform plan -var-file="environments/int.tfvars" | Select-String -Pattern "module\.KeyVault|azurerm_key_vault"

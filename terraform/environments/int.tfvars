@@ -26,7 +26,7 @@ all_resource_groups = {
     }
   }
   rg3 = {
-    name = "rg-lnt-eip-mgmt-nonprd-uaen-01"
+    name = "rg-lnt-eip-nonprd-uaen-01" # This RG is for resources that  has private endpoints like Key Vault, Storage Account etc.
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -201,170 +201,170 @@ vnet_peering_remote = {
   }
 }
 
-routetables = {
-  rt1 = {
-    name                          = "rt-nonprd-mft-uaen-01"
-    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
-    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-mft-nonprd-uaen-01"
-    bgp_route_propagation_enabled = false
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integrations"
-    }
-    routes = {
-      route1 = {
-        name             = "route-to-firewall"
-        address_prefixes = ["0.0.0.0/0"]
-        next_hop_type    = "VirtualAppliance"
-        next_hop_ip      = "10.0.5.4"
-      }
-      // route2 = {
-      //   name             = "route-to-gatewaysubnet"
-      //   address_prefixes = ["10.0.2.0/27"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-      // route3 = {
-      //   name             = "route-to-hub"
-      //   address_prefixes = ["10.0.0.0/20"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-    }
-  }
+# routetables = {
+#   rt1 = {
+#     name                          = "rt-nonprd-mft-uaen-01"
+#     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+#     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+#     snet_name                     = "snet-lnt-eip-mft-nonprd-uaen-01"
+#     bgp_route_propagation_enabled = false
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Integrations"
+#     }
+#     routes = {
+#       route1 = {
+#         name             = "route-to-firewall"
+#         address_prefixes = ["0.0.0.0/0"]
+#         next_hop_type    = "VirtualAppliance"
+#         next_hop_ip      = "10.0.5.4"
+#       }
+#       // route2 = {
+#       //   name             = "route-to-gatewaysubnet"
+#       //   address_prefixes = ["10.0.2.0/27"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#       // route3 = {
+#       //   name             = "route-to-hub"
+#       //   address_prefixes = ["10.0.0.0/20"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#     }
+#   }
 
-  rt2 = {
-    name                          = "rt-nonprd-nd-uaen-01"
-    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
-    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-nd-nonprd-uaen-01"
-    bgp_route_propagation_enabled = false
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integrations"
-    }
-    routes = {
-      route1 = {
-        name             = "route-to-firewall"
-        address_prefixes = ["0.0.0.0/0"]
-        next_hop_type    = "VirtualAppliance"
-        next_hop_ip      = "10.0.5.4"
-      }
-      // route2 = {
-      //   name             = "route-to-gatewaysubnet"
-      //   address_prefixes = ["10.0.2.0/27"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-      // route3 = {
-      //   name             = "route-to-hub"
-      //   address_prefixes = ["10.0.0.0/20"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-    }
-  }
+#   rt2 = {
+#     name                          = "rt-nonprd-nd-uaen-01"
+#     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+#     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+#     snet_name                     = "snet-lnt-eip-nd-nonprd-uaen-01"
+#     bgp_route_propagation_enabled = false
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Integrations"
+#     }
+#     routes = {
+#       route1 = {
+#         name             = "route-to-firewall"
+#         address_prefixes = ["0.0.0.0/0"]
+#         next_hop_type    = "VirtualAppliance"
+#         next_hop_ip      = "10.0.5.4"
+#       }
+#       // route2 = {
+#       //   name             = "route-to-gatewaysubnet"
+#       //   address_prefixes = ["10.0.2.0/27"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#       // route3 = {
+#       //   name             = "route-to-hub"
+#       //   address_prefixes = ["10.0.0.0/20"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#     }
+#   }
 
-  rt3 = {
-    name                          = "rt-nonprd-vm-uaen-01"
-    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
-    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-privatelink-nonprd-uaen-01"
-    bgp_route_propagation_enabled = false
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integrations"
-    }
-    routes = {
-      route1 = {
-        name             = "route-to-firewall"
-        address_prefixes = ["0.0.0.0/0"]
-        next_hop_type    = "VirtualAppliance"
-        next_hop_ip      = "10.0.5.4"
-      }
-      // route2 = {
-      //   name             = "route-to-gatewaysubnet"
-      //   address_prefixes = ["10.0.2.0/27"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-      // route3 = {
-      //   name             = "route-to-hub"
-      //   address_prefixes = ["10.0.0.0/20"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-    }
-  }
-  rt4 = {
-    name                          = "rt-nonprd-psql-uaen-01"
-    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
-    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-psql-nonprd-01"
-    bgp_route_propagation_enabled = false
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integrations"
-    }
-    routes = {
-      route1 = {
-        name             = "route-to-firewall"
-        address_prefixes = ["0.0.0.0/0"]
-        next_hop_type    = "VirtualAppliance"
-        next_hop_ip      = "10.0.5.4"
-      }
-      // route2 = {
-      //   name             = "route-to-gatewaysubnet"
-      //   address_prefixes = ["10.0.2.0/27"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-      // route3 = {
-      //   name             = "route-to-hub"
-      //   address_prefixes = ["10.0.0.0/20"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-    }
-  }
-  rt5 = {
-    name                          = "rt-nonprd-vm-uaen-01"
-    rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
-    vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
-    snet_name                     = "snet-lnt-eip-vm-nonprd-uaen-01"
-    bgp_route_propagation_enabled = false
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integrations"
-    }
-    routes = {
-      route1 = {
-        name             = "route-to-firewall"
-        address_prefixes = ["0.0.0.0/0"]
-        next_hop_type    = "VirtualAppliance"
-        next_hop_ip      = "10.0.5.4"
-      }
-      // route2 = {
-      //   name             = "route-to-gatewaysubnet"
-      //   address_prefixes = ["10.0.2.0/27"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-      // route3 = {
-      //   name             = "route-to-hub"
-      //   address_prefixes = ["10.0.0.0/20"]
-      //   next_hop_type    = "VirtualAppliance"
-      //   next_hop_ip      = "10.0.5.4"
-      // }
-    }
-  }
-}
+#   rt3 = {
+#     name                          = "rt-nonprd-vm-uaen-01"
+#     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+#     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+#     snet_name                     = "snet-lnt-eip-privatelink-nonprd-uaen-01"
+#     bgp_route_propagation_enabled = false
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Integrations"
+#     }
+#     routes = {
+#       route1 = {
+#         name             = "route-to-firewall"
+#         address_prefixes = ["0.0.0.0/0"]
+#         next_hop_type    = "VirtualAppliance"
+#         next_hop_ip      = "10.0.5.4"
+#       }
+#       // route2 = {
+#       //   name             = "route-to-gatewaysubnet"
+#       //   address_prefixes = ["10.0.2.0/27"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#       // route3 = {
+#       //   name             = "route-to-hub"
+#       //   address_prefixes = ["10.0.0.0/20"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#     }
+#   }
+#   rt4 = {
+#     name                          = "rt-nonprd-psql-uaen-01"
+#     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+#     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+#     snet_name                     = "snet-lnt-eip-psql-nonprd-01"
+#     bgp_route_propagation_enabled = false
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Integrations"
+#     }
+#     routes = {
+#       route1 = {
+#         name             = "route-to-firewall"
+#         address_prefixes = ["0.0.0.0/0"]
+#         next_hop_type    = "VirtualAppliance"
+#         next_hop_ip      = "10.0.5.4"
+#       }
+#       // route2 = {
+#       //   name             = "route-to-gatewaysubnet"
+#       //   address_prefixes = ["10.0.2.0/27"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#       // route3 = {
+#       //   name             = "route-to-hub"
+#       //   address_prefixes = ["10.0.0.0/20"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#     }
+#   }
+#   rt5 = {
+#     name                          = "rt-nonprd-vm-uaen-01"
+#     rg_name                       = "rg-lnt-eip-aks-nonprd-uaen-01"
+#     vnet_name                     = "vnet-lnt-eip-nonprd-uaen-01"
+#     snet_name                     = "snet-lnt-eip-vm-nonprd-uaen-01"
+#     bgp_route_propagation_enabled = false
+#     tags = {
+#       "Application Owner"    = "IT"
+#       "Business Criticality" = "Essential"
+#       "Environment"          = "Integrations"
+#     }
+#     routes = {
+#       route1 = {
+#         name             = "route-to-firewall"
+#         address_prefixes = ["0.0.0.0/0"]
+#         next_hop_type    = "VirtualAppliance"
+#         next_hop_ip      = "10.0.5.4"
+#       }
+#       // route2 = {
+#       //   name             = "route-to-gatewaysubnet"
+#       //   address_prefixes = ["10.0.2.0/27"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#       // route3 = {
+#       //   name             = "route-to-hub"
+#       //   address_prefixes = ["10.0.0.0/20"]
+#       //   next_hop_type    = "VirtualAppliance"
+#       //   next_hop_ip      = "10.0.5.4"
+#       // }
+#     }
+#   }
+# }
 
 storage_accounts = {
   sa1 = {
@@ -387,7 +387,7 @@ key_vault = {
     kv_name                       = "kv-lnt-nonprd-uaen-01"
     kv_rg_name                    = "rg-lnt-eip-aks-nonprd-uaen-01" # Using rg1
     sku                           = "standard"
-    purge_protection_enabled      = true
+    purge_protection_enabled      = false
     soft_delete_retention_days    = 7
     public_network_access_enabled = false
     tags = {
@@ -416,7 +416,7 @@ BackupVault = {
     rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
     rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
     location                = "UAE North"
-    rsv_vault_sku                   = "Standard"
+    rsv_vault_sku           = "Standard"
     soft_delete_enabled     = true
     tags = {
       "Application Owner"    = "IT"
@@ -602,16 +602,23 @@ acr = {
 
 aks = {
   aks1 = {
-    name                           = "aks-lnt-eip-nonprd-uaen-01"
-    resource_group_name            = "rg-lnt-eip-aks-nonprd-uaen-01"
-    location                       = "UAE North"
-    dns_prefix                     = "aks-lnt-eip-nonprd-uaen-01"
-    aks_node_count                 = 1
-    node_vm_size                   = "Standard_D2s_v3"
-    node_os_disk_size_gb           = 100
-    enable_azure_ad                = true
-    user_assigned_managed_identity = "kubernetes-lnt-eip-aks-nonprd-uaen-01"
-    kubelet_identity               = "kubelet-lnt-eip-aks-kubelet-nonprd-uaen-01"
+    name                                = "aks-lnt-eip-nonprd-uaen-01"
+    resource_group_name                 = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location                            = "UAE North"
+    dns_prefix                          = "aks-lnt-eip-nonprd-uaen-01"
+    sku_tier                            = "Free"
+    private_cluster_enabled             = true
+    private_cluster_public_fqdn_enabled = false
+    azure_policy_enabled                = true
+    only_critical_addons_enabled        = true
+    node_vm_size                        = "Standard_D2s_v3"
+    node_os_disk_size_gb                = 100
+    auto_scaling_enabled                = false
+    aks_node_count                      = 1
+    max_pods                            = 64
+    enable_azure_ad                     = true
+    user_assigned_managed_identity      = "kubernetes-lnt-eip-aks-nonprd-uaen-01"
+    kubelet_identity                    = "kubelet-lnt-eip-aks-kubelet-nonprd-uaen-01"
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -624,15 +631,15 @@ aks = {
         temporary_name_for_rotation = "unp1temp"
         zones                       = [1, 2, 3]
         vm_size                     = "Standard_D2s_v3"
-        max_count                   = 3
-        max_pods                    = 30
+        max_count                   = 1
+        max_pods                    = 64
         min_count                   = 1
         os_disk_size_gb             = 30
         os_disk_type                = "Ephemeral"
         priority                    = "Regular"
         spot_max_price              = null
         eviction_policy             = null
-        vnet_subnet_id              = "vn1.sn2" # ND subnet for AKS node pool
+        vnet_subnet_id              = "vn1.sn2"  # ND subnet key for AKS node pool
         node_labels = {
           "nodepool" = "userpool1"
         }
@@ -648,6 +655,4 @@ aks = {
 
 }
 
-# Azure AD group IDs for AKS cluster administrators
-# Replace with your actual Azure AD group object IDs
-admin_group_object_ids = []
+admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]
