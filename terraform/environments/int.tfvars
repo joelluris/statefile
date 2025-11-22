@@ -775,16 +775,28 @@ param(
     [string]$vmname = "vm-lnt-wvm1-np1"
 )
 
-# Connect using managed identity
-Connect-AzAccount -Identity
+try {
+    # Connect using managed identity
+    Write-Output "Connecting to Azure using managed identity..."
+    Connect-AzAccount -Identity -ErrorAction Stop
+    Write-Output "Successfully connected to Azure"
 
-Write-Output "Stopping AKS cluster: $aksclustername in $aksresourcegroup"
-Stop-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername -Force
+    # Stop AKS cluster
+    Write-Output "Starting to stop AKS cluster: $aksclustername in $aksresourcegroup"
+    Stop-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername -ErrorAction Stop
+    Write-Output "AKS cluster stopped successfully"
 
-Write-Output "Stopping VM: $vmname in $vmresourcegroup"
-Stop-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -Force
+    # Stop VM
+    Write-Output "Starting to stop VM: $vmname in $vmresourcegroup"
+    Stop-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -Force -ErrorAction Stop
+    Write-Output "VM stopped successfully"
 
-Write-Output "Resources stopped successfully"
+    Write-Output "All resources stopped successfully"
+}
+catch {
+    Write-Error "Failed to stop resources: $_"
+    throw
+}
 EOT
   }
 
@@ -810,19 +822,30 @@ param(
     
     [Parameter(Mandatory=$false)]
     [string]$vmname = "vm-lnt-wvm1-np1"
-    # [string[]]$vmnames = @("vm-lnt-wvm1-np1", "vm-lnt-wvm2-np1", "vm-lnt-wvm3-np1")
 )
 
-# Connect using managed identity
-Connect-AzAccount -Identity
+try {
+    # Connect using managed identity
+    Write-Output "Connecting to Azure using managed identity..."
+    Connect-AzAccount -Identity -ErrorAction Stop
+    Write-Output "Successfully connected to Azure"
 
-Write-Output "Starting AKS cluster: $aksclustername in $aksresourcegroup"
-Start-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername
+    # Start AKS cluster
+    Write-Output "Starting AKS cluster: $aksclustername in $aksresourcegroup"
+    Start-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername -ErrorAction Stop
+    Write-Output "AKS cluster started successfully"
 
-Write-Output "Starting VM: $vmname in $vmresourcegroup"
-Start-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname
+    # Start VM
+    Write-Output "Starting VM: $vmname in $vmresourcegroup"
+    Start-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -ErrorAction Stop
+    Write-Output "VM started successfully"
 
-Write-Output "Resources started successfully"
+    Write-Output "All resources started successfully"
+}
+catch {
+    Write-Error "Failed to start resources: $_"
+    throw
+}
 EOT
   }
 }
