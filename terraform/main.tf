@@ -217,6 +217,7 @@ module "automation_account" {
   runbooks            = var.automation_runbooks
   schedules           = var.automation_schedules
   job_schedules       = var.automation_job_schedules
+  role_assignments    = var.automation_role_assignments
 
   depends_on = [module.ResourceGroup]
 }

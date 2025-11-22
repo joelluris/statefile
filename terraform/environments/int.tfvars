@@ -762,17 +762,17 @@ automation_runbooks = {
     description            = "Stop AKS cluster and Windows VM to save costs"
     content                = <<-EOT
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$aksresourcegroup,
+    [Parameter(Mandatory=$false)]
+    [string]$aksresourcegroup = "rg-lnt-eip-aks-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$aksclustername,
+    [Parameter(Mandatory=$false)]
+    [string]$aksclustername = "aks-lnt-eip-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$vmresourcegroup,
+    [Parameter(Mandatory=$false)]
+    [string]$vmresourcegroup = "rg-lnt-eip-vm-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$vmname
+    [Parameter(Mandatory=$false)]
+    [string]$vmname = "vm-lnt-wvm1-np1"
 )
 
 # Connect using managed identity
@@ -799,17 +799,18 @@ EOT
     description            = "Start AKS cluster and Windows VM"
     content                = <<-EOT
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$aksresourcegroup,
+    [Parameter(Mandatory=$false)]
+    [string]$aksresourcegroup = "rg-lnt-eip-aks-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$aksclustername,
+    [Parameter(Mandatory=$false)]
+    [string]$aksclustername = "aks-lnt-eip-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$vmresourcegroup,
+    [Parameter(Mandatory=$false)]
+    [string]$vmresourcegroup = "rg-lnt-eip-vm-nonprd-uaen-01",
     
-    [Parameter(Mandatory=$true)]
-    [string]$vmname
+    [Parameter(Mandatory=$false)]
+    [string]$vmname = "vm-lnt-wvm1-np1"
+    # [string[]]$vmnames = @("vm-lnt-wvm1-np1", "vm-lnt-wvm2-np1", "vm-lnt-wvm3-np1")
 )
 
 # Connect using managed identity
@@ -883,4 +884,18 @@ automation_job_schedules = {
   #     vmname           = "vm-lnt-wvm1-np1"
   #   }
   # }
+}
+
+# Role assignments for Automation Account managed identity
+automation_role_assignments = {
+  aks_rg_contributor = {
+    automation_account_key = "aa1"
+    role_definition_name   = "Contributor"
+    scope                  = "/subscriptions/43731ed3-ead8-4406-b85d-18e966dfdb9f/resourceGroups/rg-lnt-eip-aks-nonprd-uaen-01"
+  }
+  vm_rg_contributor = {
+    automation_account_key = "aa1"
+    role_definition_name   = "Contributor"
+    scope                  = "/subscriptions/43731ed3-ead8-4406-b85d-18e966dfdb9f/resourceGroups/rg-lnt-eip-vm-nonprd-uaen-01"
+  }
 }

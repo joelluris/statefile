@@ -52,3 +52,13 @@ variable "job_schedules" {
   description = "Map of job schedules linking runbooks to schedules"
   default     = {}
 }
+
+variable "role_assignments" {
+  type = map(object({
+    automation_account_key = string
+    role_definition_name   = string
+    scope                  = string
+  }))
+  description = "Map of role assignments for automation account managed identity"
+  default     = {}
+}

@@ -60,3 +60,14 @@ resource "azurerm_automation_job_schedule" "job_schedule" {
     azurerm_automation_schedule.schedule
   ]
 }
+
+# Role Assignments for Managed Identity
+resource "azurerm_role_assignment" "automation_role" {
+  for_each = var.role_assignments
+
+  principal_id         = azurerm_automation_account.automation[each.value.automation_account_key].identity[0].principal_id
+  role_definition_name = each.value.role_definition_name
+  scope                = each.value.scope
+
+  depends_on = [azurerm_automation_account.automation]
+}
