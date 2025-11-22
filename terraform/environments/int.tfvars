@@ -3,7 +3,9 @@
 tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
 subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
 
-management_subscription_id = "42dedbdb-3ad0-438c-a796-66bb1c08686a"
+management_subscription_id        = "42dedbdb-3ad0-438c-a796-66bb1c08686a"
+log_analytics_workspace_name      = "law-management-uaenorth"
+log_analytics_resource_group_name = "rg-management-uaenorth"
 
 location    = "UAE North"
 environment = "int"
@@ -401,9 +403,9 @@ key_vault = {
     kv_name                       = "kv-lnt-nonprd-uaen-01"
     kv_rg_name                    = "rg-lnt-eip-nonprd-uaen-01"
     sku                           = "standard"
-    purge_protection_enabled      = true  # Required by Azure Policy
-    soft_delete_retention_days    = 7     # Minimum allowed: 7 days
-    public_network_access_enabled = true  # Enable for Terraform deployment, disable after via portal/policy
+    purge_protection_enabled      = true # Required by Azure Policy
+    soft_delete_retention_days    = 7    # Minimum allowed: 7 days
+    public_network_access_enabled = true # Enable for Terraform deployment, disable after via portal/policy
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -679,10 +681,11 @@ windows_vms = {
     resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
     location            = "UAE North"
     subnet_id           = "vn1.sn5" # snet-lnt-eip-vm-nonprd-uaen-01
-    vm_name             = "vm-lnt-wvm1-np1" # Max 15 chars for Windows
+    vm_name             = "vm-lnt-wvm1-np1"
     vm_size             = "Standard_B2s"
     admin_username      = "winadmin"
     os_disk_name        = "osdisk-lnt-wvm1-np1"
+    enable_public_ip    = true # Enable public IP for RDP access
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -717,12 +720,12 @@ win_vm_source_image_reference = {
 os_disk = {
   storage_account_type = "Standard_LRS"
   caching              = "ReadWrite"
-  disk_size_gb         = 127  # Minimum for Windows Server 2022
+  disk_size_gb         = 127 # Minimum for Windows Server 2022
 }
 
 data_disk = {
   storage_account_type = "Standard_LRS"
-  disk_size_gb         = 4    # Minimum allowed: 4 GB
+  disk_size_gb         = 4 # Minimum allowed: 4 GB
   caching              = "ReadWrite"
   lun                  = 0
 }
@@ -730,4 +733,154 @@ data_disk = {
 win_vm = {
   enable_vm_extension = false
   extension_command   = ""
+}
+
+automation_accounts = {
+  aa1 = {
+    name                = "aa-lnt-eip-nonprd-uaen-01"
+    resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location            = "UAE North"
+    sku_name            = "Basic"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integrations"
+    }
+  }
+}
+
+# Runbook to stop AKS and VM
+automation_runbooks = {
+  stop_resources = {
+    name                   = "Stop-AKS-and-VM"
+    automation_account_key = "aa1"
+    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location               = "UAE North"
+    runbook_type           = "PowerShell"
+    log_verbose            = true
+    log_progress           = true
+    description            = "Stop AKS cluster and Windows VM to save costs"
+    content                = <<-EOT
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$aksresourcegroup,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$aksclustername,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$vmresourcegroup,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$vmname
+)
+
+# Connect using managed identity
+Connect-AzAccount -Identity
+
+Write-Output "Stopping AKS cluster: $aksclustername in $aksresourcegroup"
+Stop-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername -Force
+
+Write-Output "Stopping VM: $vmname in $vmresourcegroup"
+Stop-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -Force
+
+Write-Output "Resources stopped successfully"
+EOT
+  }
+
+  start_resources = {
+    name                   = "Start-AKS-and-VM"
+    automation_account_key = "aa1"
+    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location               = "UAE North"
+    runbook_type           = "PowerShell"
+    log_verbose            = true
+    log_progress           = true
+    description            = "Start AKS cluster and Windows VM"
+    content                = <<-EOT
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$aksresourcegroup,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$aksclustername,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$vmresourcegroup,
+    
+    [Parameter(Mandatory=$true)]
+    [string]$vmname
+)
+
+# Connect using managed identity
+Connect-AzAccount -Identity
+
+Write-Output "Starting AKS cluster: $aksclustername in $aksresourcegroup"
+Start-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername
+
+Write-Output "Starting VM: $vmname in $vmresourcegroup"
+Start-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname
+
+Write-Output "Resources started successfully"
+EOT
+  }
+}
+
+# Schedule to stop resources every day at 11:59 PM
+automation_schedules = {
+  stop_schedule = {
+    name                   = "Stop-Resources-Daily-2359"
+    automation_account_key = "aa1"
+    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+    frequency              = "Day"
+    interval               = 1
+    timezone               = "Asia/Dubai"
+    start_time             = "2025-11-23T23:59:00+04:00"  # 11:59 PM UAE daily
+    description            = "Stop AKS and VM every day at 11:59 PM"
+    week_days              = null
+  }
+
+  # Uncomment to enable automatic start schedule
+  # start_schedule = {
+  #   name                   = "Start-Resources-8AM"
+  #   automation_account_key = "aa1"
+  #   resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+  #   frequency              = "Day"
+  #   interval               = 1
+  #   timezone               = "Asia/Dubai"
+  #   start_time             = "2025-11-23T08:00:00+04:00"  # 8 AM UAE daily
+  #   description            = "Start AKS and VM every day at 8 AM"
+  #   week_days              = null
+  # }
+}
+
+# Link runbooks to schedules
+# Note: Azure requires parameter names in lowercase due to a bug in runbook implementation
+automation_job_schedules = {
+  stop_job = {
+    automation_account_key = "aa1"
+    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+    runbook_name           = "Stop-AKS-and-VM"
+    schedule_name          = "Stop-Resources-Daily-2359"
+    parameters = {
+      aksresourcegroup = "rg-lnt-eip-aks-nonprd-uaen-01"
+      aksclustername   = "aks-lnt-eip-nonprd-uaen-01"
+      vmresourcegroup  = "rg-lnt-eip-vm-nonprd-uaen-01"
+      vmname           = "vm-lnt-wvm1-np1"
+    }
+  }
+
+  # Uncomment to enable automatic start job schedule
+  # start_job = {
+  #   automation_account_key = "aa1"
+  #   resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
+  #   runbook_name           = "Start-AKS-and-VM"
+  #   schedule_name          = "Start-Resources-8AM"
+  #   parameters = {
+  #     aksresourcegroup = "rg-lnt-eip-aks-nonprd-uaen-01"
+  #     aksclustername   = "aks-lnt-eip-nonprd-uaen-01"
+  #     vmresourcegroup  = "rg-lnt-eip-vm-nonprd-uaen-01"
+  #     vmname           = "vm-lnt-wvm1-np1"
+  #   }
+  # }
 }

@@ -38,3 +38,9 @@ data "azurerm_virtual_network" "hub" {
   name                = "vnet-hub-uaenorth"
   resource_group_name = "rg-hub-uaenorth"
 }
+
+data "azurerm_log_analytics_workspace" "la_workspace" {
+  provider            = azurerm.management
+  name                = var.log_analytics_workspace_name
+  resource_group_name = var.log_analytics_resource_group_name
+}

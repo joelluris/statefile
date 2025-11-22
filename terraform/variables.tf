@@ -17,6 +17,14 @@ variable "management_subscription_id" {
   type        = string
 }
 
+variable "log_analytics_workspace_name" {
+  type = string
+}
+
+variable "log_analytics_resource_group_name" {
+  type = string
+}
+
 variable "location" {
   description = "Azure region for resources"
   type        = string
@@ -373,6 +381,7 @@ variable "windows_vms" {
     vm_size             = string
     admin_username      = string
     os_disk_name        = string
+    enable_public_ip    = optional(bool, false)
     tags                = optional(map(string), {})
   }))
   description = "Map of Windows VMs to create"
@@ -437,4 +446,64 @@ variable "win_vm_source_image_reference" {
     version   = string
   })
   description = "Source image reference for Windows VM"
+}
+
+# ==============================================================================
+# AUTOMATION ACCOUNT MODULE VARIABLES
+# ==============================================================================
+
+variable "automation_accounts" {
+  type = map(object({
+    name                = string
+    resource_group_name = string
+    location            = string
+    sku_name            = string
+    tags                = map(string)
+  }))
+  description = "Map of automation accounts to create"
+  default     = {}
+}
+
+variable "automation_runbooks" {
+  type = map(object({
+    name                    = string
+    automation_account_key  = string
+    resource_group_name     = string
+    location                = string
+    runbook_type            = string
+    log_verbose             = bool
+    log_progress            = bool
+    description             = string
+    content                 = string
+  }))
+  description = "Map of runbooks for automation accounts"
+  default     = {}
+}
+
+variable "automation_schedules" {
+  type = map(object({
+    name                    = string
+    automation_account_key  = string
+    resource_group_name     = string
+    frequency               = string
+    interval                = number
+    timezone                = string
+    start_time              = string
+    description             = string
+    week_days               = optional(list(string))
+  }))
+  description = "Map of schedules for automation accounts"
+  default     = {}
+}
+
+variable "automation_job_schedules" {
+  type = map(object({
+    automation_account_key = string
+    resource_group_name    = string
+    runbook_name           = string
+    schedule_name          = string
+    parameters             = optional(map(string))
+  }))
+  description = "Map of job schedules linking runbooks to schedules"
+  default     = {}
 }

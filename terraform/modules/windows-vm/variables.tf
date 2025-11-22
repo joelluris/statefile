@@ -9,6 +9,7 @@ variable "windows_vms" {
     vm_size             = string
     admin_username      = string
     os_disk_name        = string
+    enable_public_ip    = optional(bool, false)
   }))
   description = "Map of Windows VMs to create"
 }

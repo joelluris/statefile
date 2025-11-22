@@ -209,3 +209,14 @@ module "windows_vm" {
     module.ResourceGroup
   ]
 }
+
+module "automation_account" {
+  source = "./modules/automation-account"
+
+  automation_accounts = var.automation_accounts
+  runbooks            = var.automation_runbooks
+  schedules           = var.automation_schedules
+  job_schedules       = var.automation_job_schedules
+
+  depends_on = [module.ResourceGroup]
+}

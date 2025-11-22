@@ -21,3 +21,8 @@ output "vm_identity_principal_ids" {
   description = "Map of VM keys to their system assigned identity principal IDs"
   value       = { for k, v in azurerm_windows_virtual_machine.vm : k => v.identity[0].principal_id }
 }
+
+output "vm_public_ips" {
+  description = "Map of VM keys to their public IP addresses (only for VMs with public IP enabled)"
+  value       = { for k, v in azurerm_public_ip.vm_pip : k => v.ip_address }
+}

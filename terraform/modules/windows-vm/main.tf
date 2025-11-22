@@ -76,6 +76,19 @@ resource "azurerm_windows_virtual_machine" "vm" {
   }
 }
 
+# Public IP for each VM (optional)
+resource "azurerm_public_ip" "vm_pip" {
+  for_each = { for k, v in var.windows_vms : k => v if lookup(v, "enable_public_ip", false) }
+
+  name                = "pip-${each.value.vm_name}"
+  location            = each.value.location
+  resource_group_name = each.value.resource_group_name
+  allocation_method   = "Static"
+  sku                 = "Standard"  # Basic SKU blocked by Azure Policy
+
+  tags = lookup(each.value, "tags", {})
+}
+
 # Network Interface for each VM
 resource "azurerm_network_interface" "vm_nic" {
   for_each = var.windows_vms
@@ -88,6 +101,7 @@ resource "azurerm_network_interface" "vm_nic" {
     name                          = "ipconfig-${each.value.vm_name}"
     subnet_id                     = lookup(var.subnet_ids, each.value.subnet_id, each.value.subnet_id)
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = lookup(each.value, "enable_public_ip", false) ? azurerm_public_ip.vm_pip[each.key].id : null
   }
 
   tags = lookup(each.value, "tags", {})
