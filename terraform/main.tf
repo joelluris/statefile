@@ -155,9 +155,9 @@ module "user_assigned_managed_identity" {
   # Pass resource IDs for scope resolution
   rg_ids              = module.ResourceGroup.rg_ids
   key_vault_ids       = module.KeyVault.key_vault_ids
-  storage_account_ids = {}                        # Add when Storage module is enabled
+  storage_account_ids = {}                 # Add when Storage module is enabled
   acr_ids             = module.acr.acr_ids # ACR module enabled
-  aks_ids             = module.aks.aks_ids                # Add when AKS module is enabled
+  aks_ids             = {}                 # Don't pass AKS IDs to avoid circular dependency
 
   depends_on = [module.ResourceGroup]
 }
@@ -166,8 +166,9 @@ module "aks" {
   source = "./modules/aks"
   aks    = var.aks
 
-  vnet_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn2"]
-  subnet_ids     = module.VirtualNetwork.subnet_ids
+  vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"]
+  subnet_ids          = module.VirtualNetwork.subnet_ids
+  private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["aks"].id
 
   # Control plane identity (kubernetes_identity)
   user_assigned_identity_ids = {
@@ -183,3 +184,4 @@ module "aks" {
 
   depends_on = [module.VirtualNetwork, module.user_assigned_managed_identity]
 }
+

@@ -41,6 +41,11 @@ variable "subnet_ids" {
   description = "Map of subnet IDs for node pools"
 }
 
+variable "private_dns_zone_id" {
+  type        = string
+  description = "The private DNS zone ID for the AKS private cluster"
+}
+
 variable "user_assigned_identity_ids" {
   type        = map(string)
   description = "Map of User Assigned Managed Identity IDs for AKS control planes"

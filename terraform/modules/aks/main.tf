@@ -37,7 +37,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   sku_tier                            = "Free"
   private_cluster_enabled             = true
-  private_dns_zone_id                 = "System"
+  private_dns_zone_id                 = var.private_dns_zone_id
   private_cluster_public_fqdn_enabled = false
   azure_policy_enabled                = true
 
