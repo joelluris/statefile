@@ -157,7 +157,7 @@ module "user_assigned_managed_identity" {
   key_vault_ids       = module.KeyVault.key_vault_ids
   storage_account_ids = {}                        # Add when Storage module is enabled
   acr_ids             = module.acr.acr_ids # ACR module enabled
-  aks_ids             = {}                # Add when AKS module is enabled
+  aks_ids             = module.aks.aks_ids                # Add when AKS module is enabled
 
   depends_on = [module.ResourceGroup]
 }
