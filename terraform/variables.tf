@@ -359,3 +359,82 @@ variable "admin_group_object_ids" {
   type        = list(string)
   default     = []
 }
+
+# ==============================================================================
+# WINDOWS VIRTUAL MACHINE MODULE VARIABLES
+# ==============================================================================
+
+variable "windows_vms" {
+  type = map(object({
+    resource_group_name = string
+    location            = string
+    subnet_id           = string
+    vm_name             = string
+    vm_size             = string
+    admin_username      = string
+    os_disk_name        = string
+    tags                = optional(map(string), {})
+  }))
+  description = "Map of Windows VMs to create"
+  default     = {}
+}
+
+variable "win_vm_extensions" {
+  type = map(object({
+    publisher            = string
+    type                 = string
+    type_handler_version = string
+    settings             = optional(map(any))
+    protected_settings   = optional(map(any))
+  }))
+  description = "Map of VM extensions to install on all Windows VMs"
+  default     = null
+}
+
+variable "windows_vm_custom_data_script" {
+  type        = string
+  description = "Custom data script to run on VM first boot"
+  default     = null
+}
+
+variable "win_vm" {
+  type = object({
+    enable_vm_extension = optional(bool, false)
+    extension_command   = optional(string, "")
+  })
+  description = "Windows VM extension configuration"
+  default = {
+    enable_vm_extension = false
+    extension_command   = ""
+  }
+}
+
+variable "os_disk" {
+  type = object({
+    storage_account_type = string
+    caching              = string
+    disk_size_gb         = number
+  })
+  description = "OS disk configuration"
+}
+
+variable "data_disk" {
+  type = object({
+    storage_account_type = string
+    disk_size_gb         = number
+    caching              = string
+    lun                  = number
+  })
+  description = "Data disk configuration for Windows VMs"
+  default     = null
+}
+
+variable "win_vm_source_image_reference" {
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+  description = "Source image reference for Windows VM"
+}

@@ -52,3 +52,49 @@ resource "azurerm_private_endpoint" "kv_pe" {
 
   depends_on = [azurerm_key_vault.kv]
 }
+
+resource "azurerm_disk_encryption_set" "kv_des" {
+  name                = var.disk_encryption_set_name
+  location            = var.location
+  resource_group_name = var.key_vault[keys(var.key_vault)[0]].kv_rg_name
+  key_vault_key_id    = azurerm_key_vault_key.kv_key.id
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  depends_on = [azurerm_key_vault_key.kv_key]
+}
+
+# Grant the Disk Encryption Set access to the Key Vault Key
+resource "azurerm_key_vault_access_policy" "des_policy" {
+  key_vault_id = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
+  tenant_id    = var.tenant_id
+  object_id    = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
+
+  key_permissions = [
+    "Get",
+    "WrapKey",
+    "UnwrapKey"
+  ]
+
+  depends_on = [azurerm_disk_encryption_set.kv_des]
+}
+
+resource "azurerm_key_vault_key" "kv_key" {
+  name         = var.key_vault_key_name
+  key_vault_id = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
+
+  key_type = "RSA"
+  key_size = 4096
+  key_opts = [
+    "encrypt",
+    "decrypt",
+    "sign",
+    "verify",
+    "wrapKey",
+    "unwrapKey",
+  ]
+
+  depends_on = [azurerm_key_vault.kv]
+}

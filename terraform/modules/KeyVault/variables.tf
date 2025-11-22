@@ -49,3 +49,15 @@ variable "soft_delete_enabled" {
   type = bool
   default = false
 }
+
+variable "disk_encryption_set_name" {
+  type        = string
+  description = "Name of the disk encryption set"
+  default     = "des-kv-disk-encryption"
+}
+
+variable "key_vault_key_name" {
+  type        = string
+  description = "Name of the Key Vault key for disk encryption"
+  default     = "disk-encryption-key"
+}

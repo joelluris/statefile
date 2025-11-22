@@ -385,7 +385,7 @@ storage_accounts = {
 key_vault = {
   kv01 = {
     kv_name                       = "kv-lnt-nonprd-uaen-01"
-    kv_rg_name                    = "rg-lnt-eip-aks-nonprd-uaen-01" # Using rg1
+    kv_rg_name                    = "rg-lnt-eip-nonprd-uaen-01"
     sku                           = "standard"
     purge_protection_enabled      = false
     soft_delete_retention_days    = 7
@@ -397,6 +397,9 @@ key_vault = {
     }
   }
 }
+
+key_vault_key_name       = "des-key-nonprod"
+disk_encryption_set_name = "des-lnt-eip-nonprod-01"
 
 # loganalytics = {
 #   law01 = {
@@ -532,11 +535,11 @@ user_assigned_managed_identity = {
       #   scope_type           = "resource_group"
       #   scope                = "rg1"
       # }
-      # ra2 = {
-      #   role_definition_name = "Key Vault Secrets User"
-      #   scope_type           = "key_vault"
-      #   scope                = "kv-lnt-nonprd-uaen-01"
-      # }
+      ra2 = {
+        role_definition_name = "Key Vault Secrets User"
+        scope_type           = "key_vault"
+        scope                = "kv-lnt-nonprd-uaen-01"
+      }
       # ra3 = {
       #   role_definition_name = "AcrPush"
       #   scope_type           = "azure_container_registry"
@@ -588,7 +591,7 @@ user_assigned_managed_identity = {
 acr = {
   acr1 = {
     name                = "acrlnteipnonprd01"
-    resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+    resource_group_name = "rg-lnt-eip-nonprd-uaen-01"
     location            = "UAE North"
     sku                 = "Basic"
     admin_enabled       = false
@@ -609,7 +612,7 @@ aks = {
     sku_tier                            = "Free"
     private_cluster_enabled             = true
     private_cluster_public_fqdn_enabled = false
-    azure_policy_enabled                = false  # Disable to prevent auto-created azurepolicy identity
+    azure_policy_enabled                = true
     only_critical_addons_enabled        = true
     node_vm_size                        = "Standard_D2s_v3"
     node_os_disk_size_gb                = 100
@@ -639,7 +642,7 @@ aks = {
         priority                    = "Regular"
         spot_max_price              = null
         eviction_policy             = null
-        vnet_subnet_id              = "vn1.sn2"  # ND subnet key for AKS node pool
+        vnet_subnet_id              = "vn1.sn2" # ND subnet key for AKS node pool
         node_labels = {
           "nodepool" = "userpool1"
         }
@@ -656,3 +659,61 @@ aks = {
 }
 
 admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]
+
+windows_vms = {
+  win-vm1 = {
+    resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
+    location            = "UAE North"
+    subnet_id           = "vn1.sn5" # snet-lnt-eip-vm-nonprd-uaen-01
+    vm_name             = "vm-lnt-eip-winvm1-np-01"
+    vm_size             = "Standard_B2s"
+    admin_username      = "winadmin"
+    os_disk_name        = "osdisk-vm-lnt-eip-winvm1-np-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integration"
+      "Purpose"              = "Jump Box for AKS Private Cluster Access"
+    }
+  }
+}
+
+windows_vm_custom_data_script = null
+
+win_vm_extensions = {
+  aad_login = {
+    publisher            = "Microsoft.Azure.ActiveDirectory"
+    type                 = "AADLoginForWindows"
+    type_handler_version = "1.0"
+  }
+  azure_monitor = {
+    publisher            = "Microsoft.Azure.Monitor"
+    type                 = "AzureMonitorWindowsAgent"
+    type_handler_version = "1.11"
+  }
+}
+
+win_vm_source_image_reference = {
+  publisher = "MicrosoftWindowsServer"
+  offer     = "WindowsServer"
+  sku       = "2022-datacenter-azure-edition"
+  version   = "latest"
+}
+
+os_disk = {
+  storage_account_type = "Standard_LRS"
+  caching              = "ReadWrite"
+  disk_size_gb         = 128
+}
+
+data_disk = {
+  storage_account_type = "Standard_LRS"
+  disk_size_gb         = 16
+  caching              = "ReadWrite"
+  lun                  = 0
+}
+
+win_vm = {
+  enable_vm_extension = false
+  extension_command   = ""
+}
