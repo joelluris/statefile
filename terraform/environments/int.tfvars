@@ -181,7 +181,21 @@ nsg_snet = {
       "Business Criticality" = "Critical"
       "Environment"          = "Integration"
     }
-    rules = []
+    rules = [
+      {
+        name                         = "Allow-RDP"
+        access                       = "Allow"
+        destination_address_prefix   = "*"
+        destination_address_prefixes = []
+        destination_port_range       = "3389"
+        destination_port_ranges      = []
+        direction                    = "Inbound"
+        priority                     = 1000
+        protocol                     = "Tcp"
+        source_address_prefix        = "*"
+        source_port_range            = "*"
+      },
+    ]
   }
 }
 
@@ -387,9 +401,9 @@ key_vault = {
     kv_name                       = "kv-lnt-nonprd-uaen-01"
     kv_rg_name                    = "rg-lnt-eip-nonprd-uaen-01"
     sku                           = "standard"
-    purge_protection_enabled      = false
-    soft_delete_retention_days    = 7
-    public_network_access_enabled = false
+    purge_protection_enabled      = true  # Required by Azure Policy
+    soft_delete_retention_days    = 7     # Minimum allowed: 7 days
+    public_network_access_enabled = true  # Enable for Terraform deployment, disable after via portal/policy
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -665,10 +679,10 @@ windows_vms = {
     resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
     location            = "UAE North"
     subnet_id           = "vn1.sn5" # snet-lnt-eip-vm-nonprd-uaen-01
-    vm_name             = "vm-lnt-eip-winvm1-np-01"
+    vm_name             = "vm-lnt-wvm1-np1" # Max 15 chars for Windows
     vm_size             = "Standard_B2s"
     admin_username      = "winadmin"
-    os_disk_name        = "osdisk-vm-lnt-eip-winvm1-np-01"
+    os_disk_name        = "osdisk-lnt-wvm1-np1"
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -703,12 +717,12 @@ win_vm_source_image_reference = {
 os_disk = {
   storage_account_type = "Standard_LRS"
   caching              = "ReadWrite"
-  disk_size_gb         = 128
+  disk_size_gb         = 127  # Minimum for Windows Server 2022
 }
 
 data_disk = {
   storage_account_type = "Standard_LRS"
-  disk_size_gb         = 16
+  disk_size_gb         = 4    # Minimum allowed: 4 GB
   caching              = "ReadWrite"
   lun                  = 0
 }

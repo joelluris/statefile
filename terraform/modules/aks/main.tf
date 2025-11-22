@@ -1,4 +1,3 @@
-
 # Flatten node pools for iteration
 locals {
   node_pools = flatten([
@@ -41,7 +40,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   private_dns_zone_id                 = var.private_dns_zone_id != null ? var.private_dns_zone_id : "System"
   private_cluster_public_fqdn_enabled = each.value.private_cluster_enabled
   
-  # azure_policy enabled = true will auto-create an identity named azurepolicy-... 
+  # azure_policy enabled = true will auto-create an identity named azurepolicy-...
+
   azure_policy_enabled                = each.value.azure_policy_enabled
 
   default_node_pool {

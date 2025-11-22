@@ -1,3 +1,5 @@
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_key_vault" "kv" {
   for_each                        = var.key_vault
   name                            = each.value.kv_name
@@ -6,12 +8,13 @@ resource "azurerm_key_vault" "kv" {
   resource_group_name             = var.key_vault[each.key].kv_rg_name
   sku_name                        = each.value.sku
   purge_protection_enabled        = each.value.purge_protection_enabled
-  soft_delete_retention_days      = var.soft_delete_enabled ? each.value.soft_delete_retention_days : 7  # Minimum recommended: 90 days
+  soft_delete_retention_days      = var.soft_delete_enabled ? each.value.soft_delete_retention_days : 7
+  rbac_authorization_enabled      = true  # Required by Azure Policy
   
   # enabled_for_disk_encryption     = true
   # enabled_for_deployment          = false
   # enabled_for_template_deployment = false
-  public_network_access_enabled   = each.value.public_network_access_enabled  # Disable public access, use private endpoint only
+  public_network_access_enabled   = each.value.public_network_access_enabled
   tags                            = each.value.tags
   depends_on                      = [var.resource_group_output]
 
@@ -53,6 +56,16 @@ resource "azurerm_private_endpoint" "kv_pe" {
   depends_on = [azurerm_key_vault.kv]
 }
 
+# Grant Terraform service principal access to manage Key Vault keys and secrets
+resource "azurerm_role_assignment" "terraform_kv_admin" {
+  # [0] gets the first key vault from the map
+  scope                = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
+  role_definition_name = "Key Vault Administrator"  # Allows keys and secrets management
+  principal_id         = data.azurerm_client_config.current.object_id
+
+  depends_on = [azurerm_key_vault.kv]
+}
+
 resource "azurerm_disk_encryption_set" "kv_des" {
   name                = var.disk_encryption_set_name
   location            = var.location
@@ -67,19 +80,13 @@ resource "azurerm_disk_encryption_set" "kv_des" {
   depends_on = [azurerm_key_vault_key.kv_key]
 }
 
-# Grant the Disk Encryption Set access to the Key Vault Key
-resource "azurerm_key_vault_access_policy" "des_policy" {
-  # [0] gets the first key vault from the map (since we use for_each on key_vault)
-  key_vault_id = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
-  tenant_id    = var.tenant_id
-  # [0] gets the first (and only) identity from the identity block list
-  object_id    = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
-
-  key_permissions = [
-    "Get",
-    "WrapKey",
-    "UnwrapKey"
-  ]
+# Grant the Disk Encryption Set access to the Key Vault Key using RBAC
+resource "azurerm_role_assignment" "des_kv_crypto" {
+  # [0] gets the first key vault from the map
+  scope                = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
+  role_definition_name = "Key Vault Crypto Service Encryption User"
+  # [0] gets the first (and only) system-assigned identity's principal_id
+  principal_id         = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
 
   depends_on = [azurerm_disk_encryption_set.kv_des]
 }
@@ -100,13 +107,8 @@ resource "azurerm_key_vault_key" "kv_key" {
     "unwrapKey",
   ]
 
-  depends_on = [azurerm_key_vault.kv]
-}
-
-resource "azurerm_role_assignment" "this" {
-  # [0] gets the first (and only) system-assigned identity's principal_id
-  principal_id         = azurerm_disk_encryption_set.kv_des.identity[0].principal_id
-  # [0] gets the first key vault from the map
-  scope                = azurerm_key_vault.kv[keys(var.key_vault)[0]].id
-  role_definition_name = "Key Vault Crypto Service Encryption User"
+  depends_on = [
+    azurerm_key_vault.kv,
+    azurerm_role_assignment.terraform_kv_admin  # Wait for permissions to propagate
+  ]
 }
