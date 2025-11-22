@@ -155,32 +155,31 @@ module "user_assigned_managed_identity" {
   # Pass resource IDs for scope resolution
   rg_ids              = module.ResourceGroup.rg_ids
   key_vault_ids       = module.KeyVault.key_vault_ids
-  storage_account_ids = {}                 # Add when Storage module is enabled
+  storage_account_ids = {}                        # Add when Storage module is enabled
   acr_ids             = module.acr.acr_ids # ACR module enabled
-  aks_ids             = {}                 # Add when AKS module is enabled
+  aks_ids             = {}                # Add when AKS module is enabled
 
   depends_on = [module.ResourceGroup]
 }
 
-
 module "aks" {
   source = "./modules/aks"
+  aks    = var.aks
 
-  providers = {
-    azurerm.connectivity = azurerm.connectivity
+  vnet_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn2"]
+  subnet_ids     = module.VirtualNetwork.subnet_ids
+
+  # Control plane identity (kubernetes_identity)
+  user_assigned_identity_ids = {
+    for k, v in var.aks : k => module.user_assigned_managed_identity.uami_ids["kubernetes_identity"]
   }
 
-  location                   = var.location
-  tenant_id                  = var.tenant_id
-  subscription_id            = var.subscription_id
-  aks_clusters               = var.aks_clusters
-  rg_details_output          = module.ResourceGroup.rg_details_output
-  snet_details_output        = module.VirtualNetwork.snet_details_output
-  key_vault_ids              = module.KeyVault.key_vault_ids
-  acr_ids                    = module.acr.acr_ids
-  user_assigned_identity     = module.user_assigned_managed_identity.user_assigned_managed_identities
+  # Kubelet identity for pulling images and accessing resources
+  kubelet_identity_ids = {
+    for k, v in var.aks : k => module.user_assigned_managed_identity.uami_ids["kubelet_identity"]
+  }
 
-  depends_on = [
-    module.UserAssignedManagedIdentity
-  ]
+  admin_group_object_ids = var.admin_group_object_ids
+
+  depends_on = [module.VirtualNetwork, module.user_assigned_managed_identity]
 }

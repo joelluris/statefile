@@ -32,9 +32,9 @@ terraform {
     }
   }
 
-  # backend "local" {
-  #   path = "terraform.tfstate"
-  # }
+  backend "local" {
+    path = "terraform.tfstate"
+  }
 }
 provider "azurerm" {
   tenant_id       = var.tenant_id
@@ -57,5 +57,12 @@ provider "azurerm" {
   resource_provider_registrations = "none"
   alias                           = "connectivity"
   subscription_id                 = "2bb0667b-d883-4406-b19a-a3083ba05bd8"
+  features {}
+}
+
+provider "azurerm" {
+  resource_provider_registrations = "none"
+  alias                           = "management"
+  subscription_id                 = var.management_subscription_id
   features {}
 }

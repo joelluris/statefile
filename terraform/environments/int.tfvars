@@ -1,8 +1,9 @@
 # Authentication variables (for local testing only - pipeline adds these dynamically)
 # Comment out when running in pipeline
-# tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
-# subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
+tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
+subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
 
+management_subscription_id = "42dedbdb-3ad0-438c-a796-66bb1c08686a"
 
 location    = "UAE North"
 environment = "int"
@@ -383,9 +384,12 @@ storage_accounts = {
 
 key_vault = {
   kv01 = {
-    kv_name    = "kv-lnt-nonprd-uaen-01"
-    kv_rg_name = "rg-lnt-eip-aks-nonprd-uaen-01" # Using rg1
-    sku        = "standard"
+    kv_name                       = "kv-lnt-nonprd-uaen-01"
+    kv_rg_name                    = "rg-lnt-eip-aks-nonprd-uaen-01" # Using rg1
+    sku                           = "standard"
+    purge_protection_enabled      = true
+    soft_delete_retention_days    = 7
+    public_network_access_enabled = false
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -412,7 +416,7 @@ BackupVault = {
     rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
     rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
     location                = "UAE North"
-    rsv_vault_sku           = "Standard"
+    rsv_vault_sku                   = "Standard"
     soft_delete_enabled     = true
     tags = {
       "Application Owner"    = "IT"
@@ -598,15 +602,52 @@ acr = {
 
 aks = {
   aks1 = {
-    name                   = "aks-lnt-eip-nonprd-uaen-01"
-    resource_group_name    = "rg-lnt-eip-aks-nonprd-uaen-01"
-    location               = "UAE North"
-    kubernetes_version     = "1.26.9"
-    dns_prefix             = "aks-lnt-eip-nonprd-uaen-01"
-    node_count             = 1
-    node_vm_size           = "Standard_D4s_v3"
-    node_os_disk_size_gb   = 100
-    linux_admin_username   = "azureuser"
-    enable_azure_ad        = true
+    name                           = "aks-lnt-eip-nonprd-uaen-01"
+    resource_group_name            = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location                       = "UAE North"
+    dns_prefix                     = "aks-lnt-eip-nonprd-uaen-01"
+    aks_node_count                 = 1
+    node_vm_size                   = "Standard_D2s_v3"
+    node_os_disk_size_gb           = 100
+    enable_azure_ad                = true
+    user_assigned_managed_identity = "kubernetes-lnt-eip-aks-nonprd-uaen-01"
+    kubelet_identity               = "kubelet-lnt-eip-aks-kubelet-nonprd-uaen-01"
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integrations"
+    }
+
+    node_pools = {
+      np1 = {
+        name                        = "unp1"
+        temporary_name_for_rotation = "unp1temp"
+        zones                       = [1, 2, 3]
+        vm_size                     = "Standard_D2s_v3"
+        max_count                   = 3
+        max_pods                    = 30
+        min_count                   = 1
+        os_disk_size_gb             = 30
+        os_disk_type                = "Ephemeral"
+        priority                    = "Regular"
+        spot_max_price              = null
+        eviction_policy             = null
+        vnet_subnet_id              = "vn1.sn2" # ND subnet for AKS node pool
+        node_labels = {
+          "nodepool" = "userpool1"
+        }
+        node_taints = []
+        tags = {
+          "Application Owner"    = "IT"
+          "Business Criticality" = "Essential"
+          "Environment"          = "Integrations"
+        }
+      },
+    }
   }
+
 }
+
+# Azure AD group IDs for AKS cluster administrators
+# Replace with your actual Azure AD group object IDs
+admin_group_object_ids = []

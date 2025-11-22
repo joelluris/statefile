@@ -1,5 +1,5 @@
-terraform {
-  backend "azurerm" {
-    use_azuread_auth = true
-  }
-}
+# terraform {
+#   backend "azurerm" {
+#     use_azuread_auth = true
+#   }
+# }

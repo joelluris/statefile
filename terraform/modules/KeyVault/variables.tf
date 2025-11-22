@@ -9,10 +9,13 @@ variable "private_dns_zone_ids" {
 
 variable "key_vault" {
   type = map(object({
-    kv_name              = string
-    kv_rg_name              = string
-    sku                  = string
-    tags                 = map(string)
+    kv_name                       = string
+    kv_rg_name                    = string
+    sku                           = string
+    purge_protection_enabled      = bool
+    soft_delete_retention_days    = number
+    public_network_access_enabled = bool
+    tags                          = map(string)
   }))
 }
 

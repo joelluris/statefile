@@ -12,6 +12,11 @@ variable "subscription_id" {
   type        = string
 }
 
+variable "management_subscription_id" {
+  description = "Management Subscription ID for Log Analytics workspace"
+  type        = string
+}
+
 variable "location" {
   description = "Azure region for resources"
   type        = string
@@ -158,10 +163,13 @@ variable "vnet_peering_remote" {
 variable "key_vault" {
   description = "Map of Key Vaults to create"
   type = map(object({
-    kv_name    = string
-    kv_rg_name = string
-    sku        = string
-    tags       = map(string)
+    kv_name                       = string
+    kv_rg_name                    = string
+    sku                           = string
+    purge_protection_enabled      = bool
+    soft_delete_retention_days    = number
+    public_network_access_enabled = bool
+    tags                          = map(string)
   }))
 }
 
@@ -299,4 +307,48 @@ variable "acr" {
     tags                = map(string)
   }))
   default = {}
+}
+
+# ==============================================================================
+# AZURE KUBERNETES SERVICE (AKS) MODULE VARIABLES
+# ==============================================================================
+
+variable "aks" {
+  description = "Map of AKS clusters to create"
+  type = map(object({
+    name                 = string
+    resource_group_name  = string
+    location             = string
+    dns_prefix           = string
+    aks_node_count       = number
+    node_vm_size         = string
+    node_os_disk_size_gb = number
+    enable_azure_ad      = bool
+    tags                 = map(string)
+    node_pools = map(object({
+      name                        = string
+      temporary_name_for_rotation = string
+      zones                       = list(number)
+      vm_size                     = string
+      max_count                   = number
+      max_pods                    = number
+      min_count                   = number
+      os_disk_size_gb             = number
+      os_disk_type                = string
+      priority                    = string
+      spot_max_price              = string
+      eviction_policy             = string
+      vnet_subnet_id              = string
+      node_labels                 = map(string)
+      node_taints                 = list(string)
+      tags                        = map(string)
+    }))
+  }))
+  default = {}
+}
+
+variable "admin_group_object_ids" {
+  description = "List of Azure AD group object IDs for AKS administrators"
+  type        = list(string)
+  default     = []
 }
