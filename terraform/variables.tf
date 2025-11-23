@@ -486,7 +486,8 @@ variable "automation_runbooks" {
     log_verbose             = bool
     log_progress            = bool
     description             = string
-    content                 = string
+    script_path             = optional(string)  # Path to PowerShell script file
+    content                 = optional(string)  # Inline content (if script_path not provided)
   }))
   description = "Map of runbooks for automation accounts"
   default     = {}

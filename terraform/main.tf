@@ -215,6 +215,28 @@ module "windows_vm" {
   ]
 }
 
+# module "linux_vm" {
+#   source = "./modules/linux-vm"
+
+#   linux_vms              = var.linux_vms
+#   subnet_ids             = module.VirtualNetwork.subnet_ids
+#   key_vault_id           = module.KeyVault.key_vault_ids["kv-lnt-nonprd-uaen-01"]
+#   custom_data_script     = var.linux_vm_custom_data_script
+#   disk_encryption_set_id = module.KeyVault.disk_encryption_set_id
+
+#   source_image_reference = var.linux_vm_source_image_reference
+#   os_disk                = var.os_disk
+#   data_disk              = var.data_disk
+#   linux_vm               = var.linux_vm
+#   extensions             = var.linux_vm_extensions
+
+#   depends_on = [
+#     module.VirtualNetwork,
+#     module.KeyVault,
+#     module.ResourceGroup
+#   ]
+# }
+
 module "automation_account" {
   source = "./modules/automation-account"
 
@@ -226,3 +248,15 @@ module "automation_account" {
 
   depends_on = [module.ResourceGroup]
 }
+
+# module "postgresql" {
+#   source = "./modules/postgresql"
+
+#   postgresql_servers        = var.postgresql_servers
+#   postgresql_databases      = var.postgresql_databases
+#   postgresql_firewall_rules = var.postgresql_firewall_rules
+#   postgresql_virtual_network_rules = var.postgresql_virtual_network_rules
+#   resource_group_output     = module.ResourceGroup.rg_ids["rg4"]
+
+#   depends_on = [module.ResourceGroup, module.VirtualNetwork]
+# }

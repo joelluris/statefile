@@ -23,7 +23,7 @@ resource "azurerm_automation_runbook" "runbook" {
   log_verbose             = each.value.log_verbose
   log_progress            = each.value.log_progress
   description             = each.value.description
-  content                 = each.value.content
+  content                 = each.value.script_path != null ? file(each.value.script_path) : each.value.content
 
   depends_on = [azurerm_automation_account.automation]
 }
