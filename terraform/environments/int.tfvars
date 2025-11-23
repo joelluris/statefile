@@ -668,7 +668,7 @@ aks = {
     location                            = "UAE North"
     dns_prefix                          = "aks-lnt-eip-nonprd-uaen-01"
     sku_tier                            = "Free"
-    private_cluster_enabled             = true
+    private_cluster_enabled             = false
     private_cluster_public_fqdn_enabled = false
     azure_policy_enabled                = false
     only_critical_addons_enabled        = true
@@ -690,21 +690,22 @@ aks = {
       np1 = {
         name                        = "unp1"
         temporary_name_for_rotation = "unp1temp"
-        zones                       = [1, 2, 3]
+        zones                       = [1]
         vm_size                     = "Standard_D2s_v3"
         max_count                   = 1
         max_pods                    = 64
         min_count                   = 1
         os_disk_size_gb             = 30
         os_disk_type                = "Ephemeral"
-        priority                    = "Regular"
-        spot_max_price              = null
-        eviction_policy             = null
+        priority                    = "Spot"
+        spot_max_price              = -1
+        eviction_policy             = "Delete"
         vnet_subnet_id              = "vn1.sn2" # ND subnet key for AKS node pool
         node_labels = {
-          "nodepool" = "userpool1"
+          "nodepool" = "usernodepool1"
         }
-        node_taints = []
+        # node_taints = []
+        node_taints = ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule",]
         tags = {
           "Application Owner"    = "IT"
           "Business Criticality" = "Essential"
@@ -713,7 +714,6 @@ aks = {
       },
     }
   }
-
 }
 
 admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]

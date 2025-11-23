@@ -37,7 +37,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   sku_tier                            = each.value.sku_tier
   private_cluster_enabled             = each.value.private_cluster_enabled
-  private_dns_zone_id                 = var.private_dns_zone_id != null ? var.private_dns_zone_id : "System"
+
+  # uncomment the line below to enable private AKS cluster with private DNS zone
+  # private_dns_zone_id                 = var.private_dns_zone_id != null ? var.private_dns_zone_id : "System"
   private_cluster_public_fqdn_enabled = each.value.private_cluster_enabled
   
   # azure_policy enabled = true will auto-create an identity named azurepolicy-...

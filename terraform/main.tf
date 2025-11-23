@@ -169,6 +169,7 @@ module "aks" {
   # - subnet_ids: Map of ALL subnets - allows additional node pools to reference subnets by key (e.g., "vn1.sn2")
   vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"] # Default node pool subnet (ND subnet)
   subnet_ids          = module.VirtualNetwork.subnet_ids            # Map for additional node pool lookups
+
   private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["privatelink.uaenorth.azmk8s.io"].id
 
   # Control plane identity (kubernetes_identity)
