@@ -26,20 +26,20 @@ resource "azurerm_key_vault_secret" "psql_password" {
 resource "azurerm_postgresql_flexible_server" "postgresql_server" {
   for_each = var.postgresql_servers
 
-  name                   = each.value.name
-  resource_group_name    = each.value.resource_group_name
-  location               = each.value.location
-  sku_name               = each.value.sku_name
-  version                = each.value.version
-  storage_mb             = each.value.storage_mb
-  backup_retention_days  = each.value.backup_retention_days
-  geo_redundant_backup_enabled = each.value.geo_redundant_backup
-  administrator_login    = each.value.administrator_login
-  administrator_password = random_password.postgresql_admin_password[each.key].result
-  delegated_subnet_id    = each.value.delegated_subnet_id != null ? (can(regex("^/subscriptions/", each.value.delegated_subnet_id)) ? each.value.delegated_subnet_id : var.subnet_ids[each.value.delegated_subnet_id]) : null
-  private_dns_zone_id    = each.value.private_dns_zone_id != null ? each.value.private_dns_zone_id : var.postgresql_dns_zone_id
+  name                          = each.value.name
+  resource_group_name           = each.value.resource_group_name
+  location                      = each.value.location
+  sku_name                      = each.value.sku_name
+  version                       = each.value.version
+  storage_mb                    = each.value.storage_mb
+  backup_retention_days         = each.value.backup_retention_days
+  geo_redundant_backup_enabled  = each.value.geo_redundant_backup
+  administrator_login           = each.value.administrator_login
+  administrator_password        = random_password.postgresql_admin_password[each.key].result
+  delegated_subnet_id           = each.value.delegated_subnet_id != null ? (can(regex("^/subscriptions/", each.value.delegated_subnet_id)) ? each.value.delegated_subnet_id : var.subnet_ids[each.value.delegated_subnet_id]) : null
+  private_dns_zone_id           = each.value.private_dns_zone_id != null ? each.value.private_dns_zone_id : var.postgresql_dns_zone_id
   public_network_access_enabled = each.value.delegated_subnet_id != null ? false : true
-  zone                   = "1"
+  zone                          = "1"
 
   dynamic "high_availability" {
     for_each = each.value.high_availability != null ? [each.value.high_availability] : []

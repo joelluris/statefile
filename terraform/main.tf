@@ -40,7 +40,7 @@ module "VirtualNetwork" {
 #   environment                = var.environment
 #   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
 #   private_dns_zone_ids = {
-#     blob = data.azurerm_private_dns_zone.dns_zones["blob"].id
+#     blob = data.azurerm_private_dns_zone.dns_zones["privatelink.blob.core.windows.net"].id
 #   }
 # }
 
@@ -53,7 +53,7 @@ module "KeyVault" {
   resource_group_output      = module.ResourceGroup.rg_ids["rg3"]
   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
   private_dns_zone_ids = {
-    vaultcore = data.azurerm_private_dns_zone.dns_zones["vaultcore"].id
+    vaultcore = data.azurerm_private_dns_zone.dns_zones["privatelink.vaultcore.azure.net"].id
   }
 
   Arcon_PAM_IP      = var.Arcon_PAM_IP
@@ -66,7 +66,7 @@ module "KeyVault" {
 #   acr                        = var.acr
 #   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
 #   private_dns_zone_ids = {
-#     acr = data.azurerm_private_dns_zone.dns_zones["acr"].id
+#     acr = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
 #   }
 
 #   depends_on = [module.VirtualNetwork]
@@ -94,7 +94,6 @@ module "AzureBackup" {
 
   depends_on = [module.windows_vm]
 }
-
 
 # module "AzurePolicy" {
 #   source                           = "./modules/AzurePolicy"
@@ -176,7 +175,7 @@ module "aks" {
   # - subnet_ids: Map of ALL subnets - allows additional node pools to reference subnets by key (e.g., "vn1.sn2")
   vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"] # Default node pool subnet (ND subnet)
   subnet_ids          = module.VirtualNetwork.subnet_ids            # Map for additional node pool lookups
-  private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["aks"].id
+  private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["privatelink.uaenorth.azmk8s.io"].id
 
   # Control plane identity (kubernetes_identity)
   user_assigned_identity_ids = {
@@ -198,7 +197,7 @@ module "windows_vm" {
 
   windows_vms            = var.windows_vms
   subnet_ids             = module.VirtualNetwork.subnet_ids
-  key_vault_id           = module.KeyVault.key_vault_ids["kv-lnt-nonprd-uaen-01"]
+  key_vault_id           = module.KeyVault.key_vault_ids["kv01"]
   custom_data_script     = var.windows_vm_custom_data_script
   disk_encryption_set_id = module.KeyVault.disk_encryption_set_id
 
@@ -257,8 +256,8 @@ module "postgresql" {
   postgresql_firewall_rules        = var.postgresql_firewall_rules
   postgresql_virtual_network_rules = var.postgresql_virtual_network_rules
   subnet_ids                       = module.VirtualNetwork.subnet_ids
-  key_vault_id                     = module.KeyVault.key_vault_ids["kv-lnt-nonprd-uaen-01"]
-  postgresql_dns_zone_id           = data.azurerm_private_dns_zone.dns_zones["psql"].id
+  key_vault_id                     = module.KeyVault.key_vault_ids["kv01"]
+  postgresql_dns_zone_id           = data.azurerm_private_dns_zone.dns_zones["privatelink.postgres.database.azure.com"].id
 
   depends_on = [module.ResourceGroup, module.VirtualNetwork, module.KeyVault]
 }

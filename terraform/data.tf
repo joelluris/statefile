@@ -28,8 +28,8 @@
 data "azurerm_private_dns_zone" "dns_zones" {
   for_each            = local.dns_zones_map
   provider            = azurerm.connectivity
-  name                = each.value
-  resource_group_name = local.dns_zones_rg_map[each.key]
+  name                = each.key
+  resource_group_name = each.value
 }
 
 # This is needed for VNet peering configurations

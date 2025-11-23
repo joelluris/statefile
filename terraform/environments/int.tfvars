@@ -570,7 +570,7 @@ user_assigned_managed_identity = {
       ra2 = {
         role_definition_name = "Key Vault Secrets User"
         scope_type           = "key_vault"
-        scope                = "kv-lnt-nonprd-uaen-01"
+        scope                = "kv01"
       }
       # ra3 = {
       #   role_definition_name = "AcrPush"
@@ -870,7 +870,7 @@ automation_role_assignments = {
 postgresql_servers = {
   psql1 = {
     name                  = "psql-lnt-eip-nonprd-uaen-01"
-    resource_group_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
+    resource_group_name   = "rg-lnt-eip-nonprd-uaen-01"
     location              = "UAE North"
     sku_name              = "B_Standard_B1ms"  # Minimum SKU: 1 vCore, 2 GiB RAM
     version               = "16"
