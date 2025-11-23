@@ -91,7 +91,7 @@ module "AzureBackup" {
   protected_vms         = var.protected_vms
   vm_ids                = module.windows_vm.vm_ids
   resource_group_output = module.ResourceGroup.rg_details_output
-  
+
   depends_on = [module.windows_vm]
 }
 
@@ -159,10 +159,10 @@ module "user_assigned_managed_identity" {
 
   # Pass resource IDs for scope resolution
   rg_ids              = module.ResourceGroup.rg_ids
-  key_vault_ids       = module.KeyVault.key_vault_ids       # Add when Key Vault module is enabled
-  storage_account_ids = {}                 # Add when Storage module is enabled
-  acr_ids             = {} # ACR IDs for role assignments
-  aks_ids             = {}                 # Don't pass AKS IDs to avoid circular dependency
+  key_vault_ids       = module.KeyVault.key_vault_ids # Add when Key Vault module is enabled
+  storage_account_ids = {}                            # Add when Storage module is enabled
+  acr_ids             = {}                            # ACR IDs for role assignments
+  aks_ids             = {}                            # Don't pass AKS IDs to avoid circular dependency
 
   depends_on = [module.ResourceGroup]
 }
@@ -249,14 +249,16 @@ module "automation_account" {
   depends_on = [module.ResourceGroup]
 }
 
-# module "postgresql" {
-#   source = "./modules/postgresql"
+module "postgresql" {
+  source = "./modules/postgresql"
 
-#   postgresql_servers        = var.postgresql_servers
-#   postgresql_databases      = var.postgresql_databases
-#   postgresql_firewall_rules = var.postgresql_firewall_rules
-#   postgresql_virtual_network_rules = var.postgresql_virtual_network_rules
-#   resource_group_output     = module.ResourceGroup.rg_ids["rg4"]
+  postgresql_servers               = var.postgresql_servers
+  postgresql_databases             = var.postgresql_databases
+  postgresql_firewall_rules        = var.postgresql_firewall_rules
+  postgresql_virtual_network_rules = var.postgresql_virtual_network_rules
+  subnet_ids                       = module.VirtualNetwork.subnet_ids
+  key_vault_id                     = module.KeyVault.key_vault_ids["kv-lnt-nonprd-uaen-01"]
+  postgresql_dns_zone_id           = data.azurerm_private_dns_zone.dns_zones["psql"].id
 
-#   depends_on = [module.ResourceGroup, module.VirtualNetwork]
-# }
+  depends_on = [module.ResourceGroup, module.VirtualNetwork, module.KeyVault]
+}

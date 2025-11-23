@@ -4,6 +4,7 @@ locals {
     "blob"      = "privatelink.blob.core.windows.net"
     "acr"       = "privatelink.azurecr.io"
     "aks"       = "privatelink.uaenorth.azmk8s.io"
+    "psql"      = "privatelink.postgres.database.azure.com"
   }
 
   dns_zones_rg_map = {
@@ -11,5 +12,6 @@ locals {
     "blob"      = "rg-hub-dns-uaenorth"
     "acr"       = "rg-hub-dns-uaenorth"
     "aks"       = "rg-hub-dns-uaenorth"
+    "psql"      = "rg-hub-dns-uaenorth"
   }
 }

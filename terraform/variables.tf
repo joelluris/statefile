@@ -530,3 +530,63 @@ variable "automation_role_assignments" {
   description = "Map of role assignments for automation account managed identity"
   default     = {}
 }
+
+# ==============================================================================
+# POSTGRESQL VARIABLES
+# ==============================================================================
+
+variable "postgresql_servers" {
+  description = "Map of PostgreSQL Flexible Servers to create"
+  type = map(object({
+    name                   = string
+    resource_group_name    = string
+    location               = string
+    sku_name               = string
+    version                = string
+    storage_mb             = number
+    backup_retention_days  = number
+    geo_redundant_backup   = bool
+    administrator_login    = string
+    ssl_enforcement        = bool
+    delegated_subnet_id    = optional(string)
+    private_dns_zone_id    = optional(string)
+    high_availability      = optional(object({
+      mode                      = string
+      standby_availability_zone = optional(string)
+    }))
+    tags = optional(map(string), {})
+  }))
+  default = {}
+}
+
+variable "postgresql_databases" {
+  description = "Map of PostgreSQL databases to create"
+  type = map(object({
+    name       = string
+    server_key = string
+    charset    = optional(string, "UTF8")
+    collation  = optional(string, "en_US.utf8")
+  }))
+  default = {}
+}
+
+variable "postgresql_firewall_rules" {
+  description = "Map of PostgreSQL firewall rules"
+  type = map(object({
+    name             = string
+    server_key       = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = {}
+}
+
+variable "postgresql_virtual_network_rules" {
+  description = "Map of PostgreSQL virtual network rules"
+  type = map(object({
+    name       = string
+    server_key = string
+    subnet_id  = string
+  }))
+  default = {}
+}

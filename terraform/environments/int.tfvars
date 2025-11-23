@@ -73,10 +73,9 @@ vnets = {
         service_delegation = ""
       }
       sn4 = {
-        name = "snet-lnt-eip-psql-nonprd-01"
-        cidr = "10.5.7.0/28"
-        # service_delegation = "Microsoft.DBforPostgreSQL/flexibleServers" # Comment if not needed
-        service_delegation = ""
+        name               = "snet-lnt-eip-psql-nonprd-01"
+        cidr               = "10.5.7.0/28"
+        service_delegation = "Microsoft.DBforPostgreSQL/flexibleServers"
       }
       sn5 = {
         name               = "snet-lnt-eip-vm-nonprd-uaen-01"
@@ -866,3 +865,47 @@ automation_role_assignments = {
     scope                  = "/subscriptions/43731ed3-ead8-4406-b85d-18e966dfdb9f/resourceGroups/rg-lnt-eip-vm-nonprd-uaen-01"
   }
 }
+
+# PostgreSQL Flexible Server Configuration
+postgresql_servers = {
+  psql1 = {
+    name                  = "psql-lnt-eip-nonprd-uaen-01"
+    resource_group_name   = "rg-lnt-eip-aks-nonprd-uaen-01"
+    location              = "UAE North"
+    sku_name              = "B_Standard_B1ms"  # Minimum SKU: 1 vCore, 2 GiB RAM
+    version               = "16"
+    storage_mb            = 32768  # 32 GB minimum
+    backup_retention_days = 7
+    geo_redundant_backup  = false
+    administrator_login   = "psqladmin"
+    ssl_enforcement       = false
+    delegated_subnet_id   = "vn1.sn4"  # References subnet key from VirtualNetwork module
+    private_dns_zone_id   = null  # Will use postgresql_dns_zone_id from data source
+    high_availability     = null
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integration"
+    }
+  }
+}
+
+postgresql_databases = {
+  db1 = {
+    name       = "appdb"
+    server_key = "psql1"
+    charset    = "UTF8"
+    collation  = "en_US.utf8"
+  }
+}
+
+postgresql_firewall_rules = {
+  rule1 = {
+    name             = "AllowAzureServices"
+    server_key       = "psql1"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "0.0.0.0"
+  }
+}
+
+postgresql_virtual_network_rules = {}

@@ -411,3 +411,47 @@ routetables = {
 # bastion_id   = "/subscriptions/8041dff6-8186-4b97-9b32-365b16d0b28b/resourceGroups/rg-app-sec-shared-uaen-01/providers/Microsoft.Network/bastionHosts/bas-shared-uaen-01"
 # bastion_name = "bas-shared-uaen-01"
 # bastion_rg   = "rg-app-sec-shared-uaen-01"
+
+# PostgreSQL Flexible Server Configuration (Minimum SKU for Dev)
+postgresql_servers = {
+  psql1 = {
+    name                  = "psql-lnt-eip-nonprd-uaen-01"
+    resource_group_name   = "rg-lnt-eip-aks-nonprd-01"
+    location              = "UAE North"
+    sku_name              = "B_Standard_B1ms"  # Minimum SKU: 1 vCore, 2 GiB RAM, burstable
+    version               = "16"
+    storage_mb            = 32768  # 32 GB minimum
+    backup_retention_days = 7
+    geo_redundant_backup  = false  # Disabled for dev to save costs
+    administrator_login   = "psqladmin"
+    ssl_enforcement       = false
+    delegated_subnet_id   = null   # Set if using private endpoint
+    private_dns_zone_id   = null   # Set if using private DNS
+    high_availability     = null   # Disabled for dev
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Development"
+    }
+  }
+}
+
+postgresql_databases = {
+  db1 = {
+    name       = "appdb"
+    server_key = "psql1"
+    charset    = "UTF8"
+    collation  = "en_US.utf8"
+  }
+}
+
+postgresql_firewall_rules = {
+  rule1 = {
+    name             = "AllowAzureServices"
+    server_key       = "psql1"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "0.0.0.0"
+  }
+}
+
+postgresql_virtual_network_rules = {}
