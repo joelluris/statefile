@@ -21,7 +21,13 @@ resource "azurerm_key_vault_secret" "vm_ssh_private_key" {
   value        = tls_private_key.vm_ssh[each.key].private_key_pem
   key_vault_id = var.key_vault_id
 
+  expiration_date = timeadd(timestamp(), "2160h") # 90 days from now (Azure Policy requirement)
+
   tags = lookup(each.value, "tags", {})
+
+  lifecycle {
+    ignore_changes = [expiration_date] # Prevent updates on every apply
+  }
 }
 
 # Store public key in Key Vault for convenience
@@ -31,7 +37,13 @@ resource "azurerm_key_vault_secret" "vm_ssh_public_key" {
   value        = tls_private_key.vm_ssh[each.key].public_key_openssh
   key_vault_id = var.key_vault_id
 
+  expiration_date = timeadd(timestamp(), "2160h") # 90 days from now (Azure Policy requirement)
+
   tags = lookup(each.value, "tags", {})
+
+  lifecycle {
+    ignore_changes = [expiration_date] # Prevent updates on every apply
+  }
 }
 
 # Linux Virtual Machine for each VM
