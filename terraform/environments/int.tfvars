@@ -442,33 +442,53 @@ BackupVault = {
   }
 }
 
-# BackupPolicy = {
-#   policy1 = {
-#     backup_policy_name             = "vm-bkp-policy-01"
-#     rsv_resource_group_name        = "rg-mgmt-dev-uaen-01"
-#     rsv_vault_name                 = "rsv-lnt-eip-aks-nonprd-uaen-01"
-#     timezone                       = "UTC"
-#     instant_restore_retention_days = 2
+BackupPolicy = {
+  policy1 = {
+    backup_policy_name             = "vm-bkp-policy-daily"
+    rsv_resource_group_name        = "rg-lnt-eip-nonprd-uaen-01"
+    rsv_vault_name                 = "rsv-lnt-eip-nonprd-uaen-01"
+    timezone                       = "Arabian Standard Time"
+    instant_restore_retention_days = 2
 
-#     # Backup Frequency
-#     backup_frequency = "Daily"
-#     backup_time      = "23:00"
+    # Backup Frequency
+    backup_frequency = "Daily"
+    backup_time      = "23:30"
 
-#     # Retention Policies
-#     retention_daily       = 7
-#     retention_weekly      = 4
-#     retention_weekly_days = ["Sunday"]
+    # Retention Policies
+    retention_daily       = 7
+    retention_weekly      = 4
+    retention_weekly_days = ["Sunday"]
 
-#     retention_monthly      = 12
-#     retention_monthly_week = ["First"]
-#     retention_monthly_days = ["Sunday"]
+    retention_monthly      = 12
+    retention_monthly_week = ["First"]
+    retention_monthly_days = ["Sunday"]
 
-#     retention_yearly       = 5
-#     retention_yearly_month = ["January"]
-#     retention_yearly_week  = ["First"]
-#     retention_yearly_days  = ["Sunday"]
-#   }
-# }
+    retention_yearly       = 1
+    retention_yearly_month = ["January"]
+    retention_yearly_week  = ["First"]
+    retention_yearly_days  = ["Sunday"]
+  }
+}
+
+# Protected VMs - Add your Windows VMs here for backup
+# Use the vm_key to reference VMs from the windows_vms variable
+protected_vms = {
+  vm1 = {
+    rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+    rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
+    vm_key                  = "win-vm1"  # References windows_vms.win-vm1
+    backup_policy_key       = "policy1"
+  }
+  # Add more VMs as needed by referencing their keys:
+  # vm2 = {
+  #   rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
+  #   rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
+  #   vm_key                  = "win-vm2"  # References windows_vms.win-vm2
+  #   backup_policy_key       = "policy1"
+  # }
+}
+
+
 
 Azure_Policy = {
   Allowed_locations = {

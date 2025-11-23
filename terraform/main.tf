@@ -81,15 +81,20 @@ module "KeyVault" {
 #   resource_group_output = module.ResourceGroup.rg_details_output
 # }
 
-# module "AzureBackup" {
-#   source                = "./modules/AzureBackup"
-#   location              = var.location
-#   tenant_id             = var.tenant_id
-#   subscription_id       = var.subscription_id
-#   BackupVault           = var.BackupVault
-#   BackupPolicy          = var.BackupPolicy
-#   resource_group_output = module.ResourceGroup.rg_details_output
-# }
+module "AzureBackup" {
+  source                = "./modules/AzureBackup"
+  location              = var.location
+  tenant_id             = var.tenant_id
+  subscription_id       = var.subscription_id
+  BackupVault           = var.BackupVault
+  BackupPolicy          = var.BackupPolicy
+  protected_vms         = var.protected_vms
+  vm_ids                = module.windows_vm.vm_ids
+  resource_group_output = module.ResourceGroup.rg_details_output
+  
+  depends_on = [module.windows_vm]
+}
+
 
 # module "AzurePolicy" {
 #   source                           = "./modules/AzurePolicy"

@@ -46,3 +46,15 @@ resource "azurerm_backup_policy_vm" "policy" {
 
   depends_on = [azurerm_recovery_services_vault.rsv]
 }
+
+#Backup protected VM
+resource "azurerm_backup_protected_vm" "protected_vm" {
+  for_each = var.protected_vms
+
+  resource_group_name = each.value.rsv_resource_group_name
+  recovery_vault_name = each.value.rsv_vault_name
+  source_vm_id        = var.vm_ids[each.value.vm_key]
+  backup_policy_id    = azurerm_backup_policy_vm.policy[each.value.backup_policy_key].id
+  
+  depends_on = [azurerm_backup_policy_vm.policy]
+}

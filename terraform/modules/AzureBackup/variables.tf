@@ -36,3 +36,20 @@ variable "BackupPolicy" {
     retention_yearly_days           = list(string)
   }))
 }
+
+variable "protected_vms" {
+  description = "A map of VMs to protect with backup"
+  type = map(object({
+    rsv_resource_group_name = string
+    rsv_vault_name          = string
+    vm_key                  = string  # Key from windows_vm module
+    backup_policy_key       = string
+  }))
+  default = {}
+}
+
+variable "vm_ids" {
+  description = "Map of VM keys to their resource IDs from windows_vm module"
+  type        = map(string)
+  default     = {}
+}

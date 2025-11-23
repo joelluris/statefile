@@ -258,6 +258,18 @@ variable "BackupPolicy" {
   default = {}
 }
 
+variable "protected_vms" {
+  description = "Map of VMs to protect with backup"
+  type = map(object({
+    rsv_resource_group_name = string
+    rsv_vault_name          = string
+    vm_key                  = string  # Key from windows_vms variable
+    backup_policy_key       = string
+  }))
+  default = {}
+}
+
+
 # ==============================================================================
 # AZURE POLICY MODULE VARIABLES
 # ==============================================================================
