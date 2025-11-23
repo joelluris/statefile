@@ -644,12 +644,13 @@ user_assigned_managed_identity = {
 #===============================================================================
 acr = {
   acr1 = {
-    name                = "acrlnteipnonprd01"
-    resource_group_name = "rg-lnt-eip-nonprd-uaen-01"
-    location            = "UAE North"
-    sku                 = "Premium"
-    admin_enabled       = false
-    subnet_ids          = "vn1.sn3" # ND subnet key for ACR
+    name                          = "acrlnteipnonprd01"
+    resource_group_name           = "rg-lnt-eip-nonprd-uaen-01"
+    location                      = "UAE North"
+    sku                           = "Basic"
+    admin_enabled                 = false
+    public_network_access_enabled = true
+    subnet_ids                    = "vn1.sn3" # ND subnet key for ACR
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -705,7 +706,7 @@ aks = {
           "nodepool" = "usernodepool1"
         }
         # node_taints = []
-        node_taints = ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule",]
+        node_taints = ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule", ]
         tags = {
           "Application Owner"    = "IT"
           "Business Criticality" = "Essential"

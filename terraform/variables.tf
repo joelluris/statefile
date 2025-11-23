@@ -319,12 +319,13 @@ variable "user_assigned_managed_identity" {
 variable "acr" {
   description = "Map of Azure Container Registries to create"
   type = map(object({
-    name                = string
-    resource_group_name = string
-    location            = string
-    sku                 = string
-    admin_enabled       = bool
-    tags                = map(string)
+    name                          = string
+    resource_group_name           = string
+    location                      = string
+    sku                           = string
+    admin_enabled                 = bool
+    public_network_access_enabled = bool
+    tags                          = map(string)
   }))
   default = {}
 }

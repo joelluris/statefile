@@ -1,12 +1,12 @@
 resource "azurerm_container_registry" "acr" {
   for_each                      = var.acr
-  
+
   name                          = each.value.name
   location                      = each.value.location
   resource_group_name           = each.value.resource_group_name
   sku                           = each.value.sku
   admin_enabled                 = each.value.admin_enabled
-  public_network_access_enabled = false # Private only
+  public_network_access_enabled = each.value.public_network_access_enabled
 
   # Network rule set only available for Premium SKU
   dynamic "network_rule_set" {
@@ -19,9 +19,13 @@ resource "azurerm_container_registry" "acr" {
   tags = each.value.tags
 }
 
-# Private Endpoint for ACR
+# Private Endpoint for ACR (only when public access is disabled)
 resource "azurerm_private_endpoint" "acr_pe" {
-  for_each            = var.acr
+  for_each = {
+    for k, v in var.acr : k => v
+    if v.public_network_access_enabled == false
+  }
+  
   name                = "pe-${each.value.name}"
   location            = each.value.location
   resource_group_name = each.value.resource_group_name
