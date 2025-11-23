@@ -263,7 +263,7 @@ variable "protected_vms" {
   type = map(object({
     rsv_resource_group_name = string
     rsv_vault_name          = string
-    vm_key                  = string  # Key from windows_vms variable
+    vm_key                  = string # Key from windows_vms variable
     backup_policy_key       = string
   }))
   default = {}
@@ -536,16 +536,16 @@ variable "automation_accounts" {
 
 variable "automation_runbooks" {
   type = map(object({
-    name                    = string
-    automation_account_key  = string
-    resource_group_name     = string
-    location                = string
-    runbook_type            = string
-    log_verbose             = bool
-    log_progress            = bool
-    description             = string
-    script_path             = optional(string)  # Path to PowerShell script file
-    content                 = optional(string)  # Inline content (if script_path not provided)
+    name                   = string
+    automation_account_key = string
+    resource_group_name    = string
+    location               = string
+    runbook_type           = string
+    log_verbose            = bool
+    log_progress           = bool
+    description            = string
+    script_path            = optional(string) # Path to PowerShell script file
+    content                = optional(string) # Inline content (if script_path not provided)
   }))
   description = "Map of runbooks for automation accounts"
   default     = {}
@@ -553,15 +553,15 @@ variable "automation_runbooks" {
 
 variable "automation_schedules" {
   type = map(object({
-    name                    = string
-    automation_account_key  = string
-    resource_group_name     = string
-    frequency               = string
-    interval                = number
-    timezone                = string
-    start_time              = string
-    description             = string
-    week_days               = optional(list(string))
+    name                   = string
+    automation_account_key = string
+    resource_group_name    = string
+    frequency              = string
+    interval               = number
+    timezone               = string
+    start_time             = string
+    description            = string
+    week_days              = optional(list(string))
   }))
   description = "Map of schedules for automation accounts"
   default     = {}
@@ -596,19 +596,19 @@ variable "automation_role_assignments" {
 variable "postgresql_servers" {
   description = "Map of PostgreSQL Flexible Servers to create"
   type = map(object({
-    name                   = string
-    resource_group_name    = string
-    location               = string
-    sku_name               = string
-    version                = string
-    storage_mb             = number
-    backup_retention_days  = number
-    geo_redundant_backup   = bool
-    administrator_login    = string
-    ssl_enforcement        = bool
-    delegated_subnet_id    = optional(string)
-    private_dns_zone_id    = optional(string)
-    high_availability      = optional(object({
+    name                  = string
+    resource_group_name   = string
+    location              = string
+    sku_name              = string
+    version               = string
+    storage_mb            = number
+    backup_retention_days = number
+    geo_redundant_backup  = bool
+    administrator_login   = string
+    ssl_enforcement       = bool
+    delegated_subnet_id   = optional(string)
+    private_dns_zone_id   = optional(string)
+    high_availability = optional(object({
       mode                      = string
       standby_availability_zone = optional(string)
     }))

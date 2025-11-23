@@ -58,10 +58,10 @@ module "KeyVault" {
 }
 
 module "acr" {
-  source                        = "./modules/acr"
-  acr                           = var.acr
-  acr_dns_zone_id               = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
-  private_endpoint_subnet_id    = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  source                     = "./modules/acr"
+  acr                        = var.acr
+  acr_dns_zone_id            = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
 
   depends_on = [module.VirtualNetwork]
 }
@@ -167,8 +167,8 @@ module "aks" {
   # Subnet configuration:
   # - vnet_subnet_id: Direct subnet ID for the default/system node pool
   # - subnet_ids: Map of ALL subnets - allows additional node pools to reference subnets by key (e.g., "vn1.sn2")
-  vnet_subnet_id      = module.VirtualNetwork.subnet_ids["vn1.sn2"] # Default node pool subnet (ND subnet)
-  subnet_ids          = module.VirtualNetwork.subnet_ids            # Map for additional node pool lookups
+  vnet_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn2"] # Default node pool subnet (ND subnet)
+  subnet_ids     = module.VirtualNetwork.subnet_ids            # Map for additional node pool lookups
 
   private_dns_zone_id = data.azurerm_private_dns_zone.dns_zones["privatelink.uaenorth.azmk8s.io"].id
 
