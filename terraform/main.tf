@@ -61,16 +61,15 @@ module "KeyVault" {
   AzureDevopsrunner = var.AzureDevopsrunner
 }
 
-# module "acr" {
-#   source                     = "./modules/acr"
-#   acr                        = var.acr
-#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-#   private_dns_zone_ids = {
-#     acr = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
-#   }
+module "acr" {
+  source                     = "./modules/acr"
+  acr                        = var.acr
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  private_dns_zone_ids = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
+  subnet_ids                = module.VirtualNetwork.subnet_ids
 
-#   depends_on = [module.VirtualNetwork]
-# }
+  depends_on = [module.VirtualNetwork]
+}
 
 # module "LogAnalytics" {
 #   source                = "./modules/LogAnalytics"

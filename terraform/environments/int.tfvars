@@ -10,6 +10,9 @@ log_analytics_resource_group_name = "rg-management-uaenorth"
 location    = "UAE North"
 environment = "int"
 
+#===============================================================================
+# MODULE RESOURCE VARIABLES
+#===============================================================================
 all_resource_groups = {
   rg1 = {
     name = "rg-lnt-eip-aks-nonprd-uaen-01"
@@ -45,6 +48,9 @@ all_resource_groups = {
   }
 }
 
+#===============================================================================
+# MODULE NETWORKING VARIABLES
+#===============================================================================
 vnets = {
   vn1 = {
     name    = "vnet-lnt-eip-nonprd-uaen-01"
@@ -381,6 +387,9 @@ vnet_peering_remote = {
 #   }
 # }
 
+#===============================================================================
+# MODULE STORAGE
+#===============================================================================
 storage_accounts = {
   sa1 = {
     resource_group_name        = "rg-lnt-eip-aks-nonprd-uaen-01"
@@ -397,6 +406,9 @@ storage_accounts = {
   }
 }
 
+#===============================================================================
+# MODULE KEY VAULT
+#===============================================================================
 key_vault = {
   kv01 = {
     kv_name                       = "kv-lnt-nonprd-uaen-01"
@@ -426,6 +438,9 @@ key_vault = {
 #   }
 # } }
 
+#===============================================================================
+# MODULE BACKUP
+#===============================================================================
 BackupVault = {
   vault1 = {
     rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
@@ -475,7 +490,7 @@ protected_vms = {
   vm1 = {
     rsv_resource_group_name = "rg-lnt-eip-aks-nonprd-uaen-01"
     rsv_vault_name          = "rsv-lnt-eip-nonprd-uaen-01"
-    vm_key                  = "win-vm1"  # References windows_vms.win-vm1
+    vm_key                  = "win-vm1" # References windows_vms.win-vm1
     backup_policy_key       = "policy1"
   }
   # Add more VMs as needed by referencing their keys:
@@ -487,8 +502,9 @@ protected_vms = {
   # }
 }
 
-
-
+#===============================================================================
+# MODULE AZURE POLICY
+#===============================================================================
 Azure_Policy = {
   Allowed_locations = {
     Name              = "Allowed locations"
@@ -556,6 +572,9 @@ Azure_Policy_Require_a_tag_on_rg = {
 # bastion_name = "bas-shared-uaen-01"
 # bastion_rg   = "rg-app-sec-shared-uaen-01"
 
+#===============================================================================
+# MODULE USER ASSIGNED MANAGED IDENTITIES
+#===============================================================================
 user_assigned_managed_identity = {
   workload_identity = {
     name     = "uami-lnt-eip-nonprd-uaen-01"
@@ -620,6 +639,9 @@ user_assigned_managed_identity = {
   }
 }
 
+#===============================================================================
+# MODULE ACR
+#===============================================================================
 acr = {
   acr1 = {
     name                = "acrlnteipnonprd01"
@@ -627,6 +649,7 @@ acr = {
     location            = "UAE North"
     sku                 = "Basic"
     admin_enabled       = false
+    subnet_ids          = "vn1.sn3" # ND subnet key for ACR
     tags = {
       "Application Owner"    = "IT"
       "Business Criticality" = "Essential"
@@ -635,6 +658,9 @@ acr = {
   }
 }
 
+#===============================================================================
+# MODULE AKS
+#===============================================================================
 aks = {
   aks1 = {
     name                                = "aks-lnt-eip-nonprd-uaen-01"
@@ -692,6 +718,9 @@ aks = {
 
 admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]
 
+#===============================================================================
+# MODULE WINDOWS VM (JUMP BOX)
+#===============================================================================
 windows_vms = {
   win-vm1 = {
     resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
@@ -751,6 +780,9 @@ win_vm = {
   extension_command   = ""
 }
 
+#===============================================================================
+# MODULE AUTOMATION ACCOUNT WITH RUNBOOKS AND SCHEDULES
+#===============================================================================
 automation_accounts = {
   aa1 = {
     name                = "aa-lnt-eip-nonprd-uaen-01"
@@ -802,7 +834,7 @@ automation_schedules = {
     frequency              = "Day"
     interval               = 1
     timezone               = "Asia/Dubai"
-    start_time             = "2025-11-23T23:59:00+04:00"  # 11:59 PM UAE daily
+    start_time             = "2025-11-23T23:59:00+04:00" # 11:59 PM UAE daily
     description            = "Stop AKS and VM every day at 11:59 PM"
     week_days              = null
   }
@@ -866,21 +898,23 @@ automation_role_assignments = {
   }
 }
 
-# PostgreSQL Flexible Server Configuration
+#===============================================================================
+# MODULE POSTGRESQL FLEXIBLE SERVER
+#===============================================================================
 postgresql_servers = {
   psql1 = {
     name                  = "psql-lnt-eip-nonprd-uaen-01"
     resource_group_name   = "rg-lnt-eip-nonprd-uaen-01"
     location              = "UAE North"
-    sku_name              = "B_Standard_B1ms"  # Minimum SKU: 1 vCore, 2 GiB RAM
+    sku_name              = "B_Standard_B1ms" # Minimum SKU: 1 vCore, 2 GiB RAM
     version               = "16"
-    storage_mb            = 32768  # 32 GB minimum
+    storage_mb            = 32768 # 32 GB minimum
     backup_retention_days = 7
     geo_redundant_backup  = false
     administrator_login   = "psqladmin"
     ssl_enforcement       = false
-    delegated_subnet_id   = "vn1.sn4"  # References subnet key from VirtualNetwork module
-    private_dns_zone_id   = null  # Will use postgresql_dns_zone_id from data source
+    delegated_subnet_id   = "vn1.sn4" # References subnet key from VirtualNetwork module
+    private_dns_zone_id   = null      # Will use postgresql_dns_zone_id from data source
     high_availability     = null
     tags = {
       "Application Owner"    = "IT"
