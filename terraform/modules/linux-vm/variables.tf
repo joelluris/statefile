@@ -1,101 +1,87 @@
-# # Linux VM Module Variables
+variable "linux_vms" {
+  description = "Map of Linux VMs to create"
+  type = map(object({
+    vm_name             = string
+    location            = string
+    resource_group_name = string
+    vm_size             = string
+    admin_username      = string
+    subnet_id           = string
+    os_disk_name        = string
+    enable_public_ip    = optional(bool, false)
+    tags                = optional(map(string), {})
+  }))
+}
 
-# variable "linux_vms" {
-#   type = map(object({
-#     vm_name        = string
-#     vm_size        = string
-#     admin_username = string
-#     os_disk_name   = string
-#   }))
-#   description = "Map of Linux VMs to create"
-# }
+variable "subnet_ids" {
+  description = "Map of subnet IDs for dynamic lookup"
+  type        = map(string)
+}
 
-# variable "location" {
-#   type        = string
-#   description = "Azure region for the VM"
-# }
+variable "key_vault_id" {
+  description = "Key Vault ID to store SSH keys"
+  type        = string
+}
 
-# variable "resource_group_name" {
-#   type        = string
-#   description = "Resource group name"
-# }
+variable "disk_encryption_set_id" {
+  description = "Disk encryption set ID for disk encryption"
+  type        = string
+}
 
-# variable "subnet_id" {
-#   type        = string
-#   description = "Subnet ID for the VM NIC"
-# }
+variable "custom_data_script" {
+  description = "Optional custom data script for VM initialization"
+  type        = string
+  default     = null
+}
 
-# variable "key_vault_id" {
-#   type        = string
-#   description = "Key Vault ID to store the password"
-# }
+variable "source_image_reference" {
+  description = "Source image reference for Linux VMs"
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+}
 
-# variable "custom_data_script" {
-#   type        = string
-#   description = "Custom data script for VM initialization"
-#   default     = null
-# }
+variable "os_disk" {
+  description = "OS disk configuration"
+  type = object({
+    caching              = string
+    storage_account_type = string
+    disk_size_gb         = number
+  })
+}
 
-# variable "disk_encryption_set_id" {
-#   type        = string
-#   description = "Disk encryption set ID"
-# }
+variable "data_disk" {
+  description = "Data disk configuration (optional)"
+  type = object({
+    storage_account_type = string
+    disk_size_gb         = number
+    lun                  = number
+    caching              = string
+  })
+  default = null
+}
 
-# variable "source_image_reference" {
-#   type = object({
-#     publisher = string
-#     offer     = string
-#     sku       = string
-#     version   = string
-#   })
-#   description = "Source image reference for the VM"
-# }
+variable "linux_vm" {
+  description = "Linux VM specific configuration"
+  type = object({
+    disable_password_authentication = bool
+  })
+  default = {
+    disable_password_authentication = true
+  }
+}
 
-# variable "os_disk" {
-#   type = object({
-#     storage_account_type = string
-#     caching              = string
-#     disk_size_gb         = number
-#   })
-#   description = "OS disk configuration"
-# }
-
-# variable "data_disk" {
-#   type = object({
-#     storage_account_type = string
-#     disk_size_gb         = number
-#     caching              = string
-#     lun                  = number
-#   })
-#   description = "Data disk configuration"
-#   default     = null
-# }
-
-# variable "disable_password_authentication" {
-#   type        = bool
-#   description = "Whether to disable password authentication and use SSH keys only"
-#   default     = true
-# }
-
-# variable "ssh_public_key" {
-#   type        = string
-#   description = "SSH public key for authentication (required if password authentication is disabled)"
-#   default     = null
-# }
-
-# variable "extensions" {
-#   type = map(object({
-#     publisher            = string
-#     type                 = string
-#     type_handler_version = string
-#     settings             = optional(map(any))
-#     protected_settings   = optional(map(any))
-#   }))
-#   description = "Map of VM extensions to install on all VMs"
-#   default     = null
-# }
-
-# variable "tags" {
-#   type        = map(string)
-#   description = "Tags to apply to resources"
-# }
+variable "extensions" {
+  description = "VM extensions to install"
+  type = map(object({
+    publisher            = string
+    type                 = string
+    type_handler_version = string
+    settings             = optional(map(any))
+    protected_settings   = optional(map(any))
+  }))
+  default = null
+}

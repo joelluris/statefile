@@ -461,6 +461,64 @@ variable "win_vm_source_image_reference" {
 }
 
 # ==============================================================================
+# LINUX VM MODULE VARIABLES
+# ==============================================================================
+
+variable "linux_vms" {
+  type = map(object({
+    resource_group_name = string
+    location            = string
+    subnet_id           = string
+    vm_name             = string
+    vm_size             = string
+    admin_username      = string
+    os_disk_name        = string
+    enable_public_ip    = optional(bool, false)
+    tags                = optional(map(string), {})
+  }))
+  description = "Map of Linux VMs to create"
+  default     = {}
+}
+
+variable "linux_vm_extensions" {
+  type = map(object({
+    publisher            = string
+    type                 = string
+    type_handler_version = string
+    settings             = optional(map(any))
+    protected_settings   = optional(map(any))
+  }))
+  description = "Map of VM extensions to install on all Linux VMs"
+  default     = null
+}
+
+variable "linux_vm_custom_data_script" {
+  type        = string
+  description = "Custom data script to run on VM first boot (cloud-init compatible)"
+  default     = null
+}
+
+variable "linux_vm" {
+  type = object({
+    disable_password_authentication = bool
+  })
+  description = "Linux VM configuration"
+  default = {
+    disable_password_authentication = true
+  }
+}
+
+variable "linux_vm_source_image_reference" {
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+  description = "Source image reference for Linux VM"
+}
+
+# ==============================================================================
 # AUTOMATION ACCOUNT MODULE VARIABLES
 # ==============================================================================
 

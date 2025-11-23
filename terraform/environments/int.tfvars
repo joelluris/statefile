@@ -723,7 +723,7 @@ admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]
 #===============================================================================
 windows_vms = {
   win-vm1 = {
-    resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
+    resource_group_name = "rg-lnt-eip-mft-nonprd-uaen-01"
     location            = "UAE North"
     subnet_id           = "vn1.sn5" # snet-lnt-eip-vm-nonprd-uaen-01
     vm_name             = "vm-lnt-wvm1-np1"
@@ -784,9 +784,44 @@ win_vm = {
 # MODULE WINDOWS LINUX
 #===============================================================================
 linux_vms = {
-  # Add Linux VMs here if needed
+  lin-vm1 = {
+    resource_group_name = "rg-lnt-eip-mft-nonprd-uaen-01"
+    location            = "UAE North"
+    subnet_id           = "vn1.sn1" # snet-lnt-eip-mft-nonprd-uaen-01
+    vm_name             = "vm-lnt-ubn1-np1"
+    vm_size             = "Standard_B2s"
+    admin_username      = "linuxadmin"
+    os_disk_name        = "osdisk-lnt-ubn1-np1"
+    enable_public_ip    = true # Enable public IP for RDP access
+    tags = {
+      "Application Owner"    = "IT"
+      "Business Criticality" = "Essential"
+      "Environment"          = "Integration"
+      "Purpose"              = "MFT VM for Integration Workloads"
+    }
+  }
 }
 
+linux_vm_custom_data_script = null
+
+linux_vm_extensions = {
+  azure_monitor = {
+    publisher            = "Microsoft.Azure.Monitor"
+    type                 = "AzureMonitorLinuxAgent"
+    type_handler_version = "1.25"
+  }
+}
+
+linux_vm_source_image_reference = {
+  publisher = "Canonical"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts-gen2"
+  version   = "latest"
+}
+
+linux_vm = {
+  disable_password_authentication = true
+}
 
 #===============================================================================
 # MODULE AUTOMATION ACCOUNT WITH RUNBOOKS AND SCHEDULES

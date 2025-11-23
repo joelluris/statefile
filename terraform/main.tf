@@ -208,27 +208,27 @@ module "windows_vm" {
   ]
 }
 
-# module "linux_vm" {
-#   source = "./modules/linux-vm"
+module "linux_vm" {
+  source = "./modules/linux-vm"
 
-#   linux_vms              = var.linux_vms
-#   subnet_ids             = module.VirtualNetwork.subnet_ids
-#   key_vault_id           = module.KeyVault.key_vault_ids["kv-lnt-nonprd-uaen-01"]
-#   custom_data_script     = var.linux_vm_custom_data_script
-#   disk_encryption_set_id = module.KeyVault.disk_encryption_set_id
+  linux_vms              = var.linux_vms
+  subnet_ids             = module.VirtualNetwork.subnet_ids
+  key_vault_id           = module.KeyVault.key_vault_ids["kv01"]
+  custom_data_script     = var.linux_vm_custom_data_script
+  disk_encryption_set_id = module.KeyVault.disk_encryption_set_id
 
-#   source_image_reference = var.linux_vm_source_image_reference
-#   os_disk                = var.os_disk
-#   data_disk              = var.data_disk
-#   linux_vm               = var.linux_vm
-#   extensions             = var.linux_vm_extensions
+  source_image_reference = var.linux_vm_source_image_reference
+  os_disk                = var.os_disk
+  data_disk              = var.data_disk
+  linux_vm               = var.linux_vm
+  extensions             = var.linux_vm_extensions
 
-#   depends_on = [
-#     module.VirtualNetwork,
-#     module.KeyVault,
-#     module.ResourceGroup
-#   ]
-# }
+  depends_on = [
+    module.VirtualNetwork,
+    module.KeyVault,
+    module.ResourceGroup
+  ]
+}
 
 module "automation_account" {
   source = "./modules/automation-account"
