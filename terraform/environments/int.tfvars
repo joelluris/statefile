@@ -123,19 +123,19 @@ nsg_snet = {
       "Environment"          = "Integration"
     }
     rules = [
-      # {
-      #   name                         = "AllowSSH"
-      #   access                       = "Allow"
-      #   destination_address_prefix   = "*"
-      #   destination_address_prefixes = []
-      #   destination_port_range       = "22"
-      #   destination_port_ranges      = []
-      #   direction                    = "Inbound"
-      #   priority                     = 1001
-      #   protocol                     = "Tcp"
-      #   source_address_prefix        = "*"
-      #   source_port_range            = "*"
-      # },
+      {
+        name                         = "AllowSSH"
+        access                       = "Allow"
+        destination_address_prefix   = "*"
+        destination_address_prefixes = []
+        destination_port_range       = "22"
+        destination_port_ranges      = []
+        direction                    = "Inbound"
+        priority                     = 1000
+        protocol                     = "Tcp"
+        source_address_prefix        = "*"
+        source_port_range            = "*"
+      },
     ]
   }
 
