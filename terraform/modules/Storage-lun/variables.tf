@@ -17,6 +17,7 @@ variable "snet_details_output" {
   }))
 }
 variable "private_endpoint_subnet_id" {}
-variable "private_dns_zone_ids" {
-  type = map(string)
+variable "blob_dns_zone_id" {
+  type        = string
+  description = "The private DNS zone ID for Storage blob"
 }

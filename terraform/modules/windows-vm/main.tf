@@ -99,7 +99,7 @@ resource "azurerm_network_interface" "vm_nic" {
 
   ip_configuration {
     name                          = "ipconfig-${each.value.vm_name}"
-    subnet_id                     = lookup(var.subnet_ids, each.value.subnet_id, each.value.subnet_id)
+    subnet_id                     = can(regex("^/subscriptions/", each.value.subnet_id)) ? each.value.subnet_id : var.subnet_ids[each.value.subnet_id]
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = lookup(each.value, "enable_public_ip", false) ? azurerm_public_ip.vm_pip[each.key].id : null
   }

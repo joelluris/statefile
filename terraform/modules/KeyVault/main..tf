@@ -2,6 +2,7 @@ data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "kv" {
   for_each                        = var.key_vault
+  
   name                            = each.value.kv_name
   tenant_id                       = var.tenant_id
   location                        = var.location
@@ -50,7 +51,7 @@ resource "azurerm_private_endpoint" "kv_pe" {
 
   private_dns_zone_group {
     name                 = "pdz-group-${each.value.kv_name}"
-    private_dns_zone_ids = [var.private_dns_zone_ids["vaultcore"]]
+    private_dns_zone_ids = [var.kv_dns_zone_id]
   }
 
   depends_on = [azurerm_key_vault.kv]

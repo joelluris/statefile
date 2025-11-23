@@ -46,7 +46,7 @@ resource "azurerm_private_endpoint" "storage_pe" {
 
   private_dns_zone_group {
     name                 = "pdz-group-${each.value.storage_account_name}"
-    private_dns_zone_ids = [var.private_dns_zone_ids["blob"]]
+    private_dns_zone_ids = [var.blob_dns_zone_id]
   }
 
   tags = each.value.tags

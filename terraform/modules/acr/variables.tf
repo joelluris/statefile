@@ -15,7 +15,7 @@ variable "private_endpoint_subnet_id" {
   description = "The subnet ID where private endpoints will be created"
 }
 
-variable "private_dns_zone_ids" {
-  type        = map(string)
-  description = "A map of private DNS zone IDs (key: acr, value: zone ID)"
+variable "acr_dns_zone_id" {
+  type        = string
+  description = "The private DNS zone ID for ACR"
 }

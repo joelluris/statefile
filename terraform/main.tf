@@ -33,16 +33,14 @@ module "VirtualNetwork" {
   rg_details_input           = module.ResourceGroup.rg_details_output
 }
 
-# module "storage_account" {
-#   source                     = "./modules/Storage-lun"
-#   storage_accounts           = var.storage_accounts
-#   snet_details_output        = module.VirtualNetwork.snet_details_output
-#   environment                = var.environment
-#   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-#   private_dns_zone_ids = {
-#     blob = data.azurerm_private_dns_zone.dns_zones["privatelink.blob.core.windows.net"].id
-#   }
-# }
+module "storage_account" {
+  source                     = "./modules/Storage-lun"
+  storage_accounts           = var.storage_accounts
+  snet_details_output        = module.VirtualNetwork.snet_details_output
+  environment                = var.environment
+  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
+  blob_dns_zone_id           = data.azurerm_private_dns_zone.dns_zones["privatelink.blob.core.windows.net"].id
+}
 
 module "KeyVault" {
   source                     = "./modules/KeyVault"
@@ -52,9 +50,7 @@ module "KeyVault" {
   key_vault                  = var.key_vault
   resource_group_output      = module.ResourceGroup.rg_ids["rg3"]
   private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = {
-    vaultcore = data.azurerm_private_dns_zone.dns_zones["privatelink.vaultcore.azure.net"].id
-  }
+  kv_dns_zone_id             = data.azurerm_private_dns_zone.dns_zones["privatelink.vaultcore.azure.net"].id
 
   Arcon_PAM_IP      = var.Arcon_PAM_IP
   umbrella_ip_range = var.umbrella_ip_range
@@ -62,11 +58,10 @@ module "KeyVault" {
 }
 
 module "acr" {
-  source                     = "./modules/acr"
-  acr                        = var.acr
-  private_endpoint_subnet_id = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
-  private_dns_zone_ids = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
-  subnet_ids                = module.VirtualNetwork.subnet_ids
+  source                        = "./modules/acr"
+  acr                           = var.acr
+  acr_dns_zone_id               = data.azurerm_private_dns_zone.dns_zones["privatelink.azurecr.io"].id
+  private_endpoint_subnet_id    = module.VirtualNetwork.subnet_ids["vn1.sn3"] # snet-lnt-eip-privatelink-nonprd-uaen-01
 
   depends_on = [module.VirtualNetwork]
 }

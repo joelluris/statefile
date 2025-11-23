@@ -18,7 +18,7 @@ output "snet_details_output" {
 }
 
 output "subnet_ids" {
-  description = "A map of subnet names to their IDs."
+  description = "A map of subnet keys to their IDs. Keys are defined in tfvars (e.g., vn1.sn1, vn1.sn2). Use this for dynamic subnet lookups in modules."
   value       = { for k, s in azurerm_subnet.subnets : k => s.id }
 }
 

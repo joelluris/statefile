@@ -3,8 +3,9 @@ variable "tenant_id" {}
 variable "subscription_id" {}
 variable "resource_group_output" {}
 variable "private_endpoint_subnet_id" {}
-variable "private_dns_zone_ids" {
-  type = map(string)
+variable "kv_dns_zone_id" {
+  type        = string
+  description = "The private DNS zone ID for Key Vault"
 }
 
 variable "key_vault" {

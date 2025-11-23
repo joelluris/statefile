@@ -1,15 +1,19 @@
 resource "azurerm_container_registry" "acr" {
   for_each                      = var.acr
+  
   name                          = each.value.name
   location                      = each.value.location
   resource_group_name           = each.value.resource_group_name
   sku                           = each.value.sku
   admin_enabled                 = each.value.admin_enabled
-  public_network_access_enabled = false  # Private only
-  
-  # Network rule set for additional security
-  network_rule_set {
-    default_action = "Deny"
+  public_network_access_enabled = false # Private only
+
+  # Network rule set only available for Premium SKU
+  dynamic "network_rule_set" {
+    for_each = each.value.sku == "Premium" ? [1] : []
+    content {
+      default_action = "Deny"
+    }
   }
 
   tags = each.value.tags
@@ -32,7 +36,7 @@ resource "azurerm_private_endpoint" "acr_pe" {
 
   private_dns_zone_group {
     name                 = "pdz-group-${each.value.name}"
-    private_dns_zone_ids = [var.private_dns_zone_ids["acr"]]
+    private_dns_zone_ids = [var.acr_dns_zone_id]
   }
 
   tags = each.value.tags

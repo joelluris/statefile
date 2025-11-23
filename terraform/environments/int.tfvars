@@ -392,7 +392,7 @@ vnet_peering_remote = {
 #===============================================================================
 storage_accounts = {
   sa1 = {
-    resource_group_name        = "rg-lnt-eip-aks-nonprd-uaen-01"
+    resource_group_name        = "rg-lnt-eip-nonprd-uaen-01"
     location                   = "UAE North"
     storage_account_name       = "stlntnonprduaen01"
     account_tier               = "Standard"
@@ -647,7 +647,7 @@ acr = {
     name                = "acrlnteipnonprd01"
     resource_group_name = "rg-lnt-eip-nonprd-uaen-01"
     location            = "UAE North"
-    sku                 = "Basic"
+    sku                 = "Premium"
     admin_enabled       = false
     subnet_ids          = "vn1.sn3" # ND subnet key for ACR
     tags = {
@@ -779,6 +779,14 @@ win_vm = {
   enable_vm_extension = false
   extension_command   = ""
 }
+
+#===============================================================================
+# MODULE WINDOWS LINUX
+#===============================================================================
+linux_vms = {
+  # Add Linux VMs here if needed
+}
+
 
 #===============================================================================
 # MODULE AUTOMATION ACCOUNT WITH RUNBOOKS AND SCHEDULES
