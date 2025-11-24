@@ -38,10 +38,18 @@ try {
     # Wait a moment for AKS to stabilize
     Start-Sleep -Seconds 10
 
-    # Start VM
-    Write-Output "Starting VM: $vmname in $vmresourcegroup"
-    Start-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -ErrorAction Stop
-    Write-Output "VM started successfully"
+    # Define VMs with their resource groups
+    $vmsToStart = @(
+        @{Name="vm-lnt-wvm1-np1"; ResourceGroup="rg-lnt-eip-vm-nonprd-uaen-01"},
+        @{Name="vm-lnt-ubn1-np1"; ResourceGroup="rg-lnt-eip-mft-nonprd-uaen-01"}
+    )
+
+    # Start each VM
+    foreach ($vm in $vmsToStart) {
+        Write-Output "Starting VM: $($vm.Name) in $($vm.ResourceGroup)"
+        Start-AzVM -ResourceGroupName $vm.ResourceGroup -Name $vm.Name -ErrorAction Stop
+        Write-Output "VM $($vm.Name) started successfully"
+    }
 
     Write-Output "All resources started successfully"
 }

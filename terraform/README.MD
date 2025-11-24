@@ -119,7 +119,9 @@ terraform plan -var-file="environments/dev.tfvars" -out=tfplan
 terraform show -no-color tfplan > plan.txt
 terraform apply -auto-approve -var-file="environments/nonprod.tfvars"
 terraform destroy -var-file="environments/nonprod.tfvars" -auto-approve
-#
+
+# target the module
+terraform apply -var-file='environments/int.tfvars' '-target=module.postgresql'
 
 terraform plan -var-file="environments/nonprod.tfvars" -out nonprod.tfplan
 terraform show -no-color nonprod.tfplan > nonprod-plan.txt

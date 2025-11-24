@@ -9,7 +9,7 @@ param(
     [string]$vmresourcegroup = "rg-lnt-eip-vm-nonprd-uaen-01",
     
     [Parameter(Mandatory=$false)]
-    [string]$vmname = "vm-lnt-wvm1-np1"
+    [string[]]$vmname = @("vm-lnt-wvm1-np1", "vm-lnt-ubn1-np1")
 )
 
 try {
@@ -23,10 +23,18 @@ try {
     Stop-AzAksCluster -ResourceGroupName $aksresourcegroup -Name $aksclustername -ErrorAction Stop
     Write-Output "AKS cluster stopped successfully"
 
-    # Stop VM
-    Write-Output "Starting to stop VM: $vmname in $vmresourcegroup"
-    Stop-AzVM -ResourceGroupName $vmresourcegroup -Name $vmname -Force -ErrorAction Stop
-    Write-Output "VM stopped successfully"
+    # Define VMs with their resource groups
+    $vmsToStop = @(
+        @{Name="vm-lnt-wvm1-np1"; ResourceGroup="rg-lnt-eip-vm-nonprd-uaen-01"},
+        @{Name="vm-lnt-ubn1-np1"; ResourceGroup="rg-lnt-eip-mft-nonprd-uaen-01"}
+    )
+
+    # Stop each VM
+    foreach ($vm in $vmsToStop) {
+        Write-Output "Starting to stop VM: $($vm.Name) in $($vm.ResourceGroup)"
+        Stop-AzVM -ResourceGroupName $vm.ResourceGroup -Name $vm.Name -Force -ErrorAction Stop
+        Write-Output "VM $($vm.Name) stopped successfully"
+    }
 
     Write-Output "All resources stopped successfully"
 }

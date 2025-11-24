@@ -38,7 +38,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   sku_tier                            = each.value.sku_tier
   private_cluster_enabled             = each.value.private_cluster_enabled
   private_cluster_public_fqdn_enabled = each.value.private_cluster_enabled
-    azure_policy_enabled                = each.value.azure_policy_enabled
+  azure_policy_enabled                = each.value.azure_policy_enabled
 
   default_node_pool {
     name                         = "system01"
@@ -145,8 +145,8 @@ resource "azurerm_kubernetes_cluster_node_pool" "node_pools" {
   vnet_subnet_id              = var.subnet_ids[each.value.vnet_subnet_id]
   temporary_name_for_rotation = each.value.temporary_name_for_rotation
 
-  zones       = each.value.zones
-  vm_size     = each.value.vm_size
+  zones           = each.value.zones
+  vm_size         = each.value.vm_size
   os_disk_size_gb = each.value.os_disk_size_gb
   os_disk_type    = each.value.os_disk_type
   # Merge user labels with Azure-managed scalesetpriority label for Spot nodes
@@ -154,7 +154,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "node_pools" {
     each.value.node_labels,
     each.value.priority == "Spot" ? { "kubernetes.azure.com/scalesetpriority" = "spot" } : {}
   )
-  node_taints = each.value.node_taints
+  node_taints          = each.value.node_taints
   auto_scaling_enabled = true
   min_count            = each.value.min_count
   max_count            = each.value.max_count
