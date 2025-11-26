@@ -8,12 +8,21 @@ resource "azuread_group" "azure_security_admins" {
   security_enabled = true
 }
 
+resource "azuread_group" "azure_vm_contributors" {
+  display_name     = "RoleGroup-Azure-VM-Contributor"
+  security_enabled = true
+}
+
 output "azure_network_admins_id" {
   value = azuread_group.azure_network_admins.id
 }
 
 output "azure_security_admins_id" {
   value = azuread_group.azure_security_admins.id
+}
+
+output "azure_vm_contributors_id" {
+  value = azuread_group.azure_vm_contributors.id
 }
 
 resource "azurerm_role_assignment" "network_admin" {
@@ -26,4 +35,10 @@ resource "azurerm_role_assignment" "security_admin" {
   scope                = "/subscriptions/${var.subscription_id}"
   role_definition_name = "Security Admin"
   principal_id         = azuread_group.azure_security_admins.object_id
+}
+
+resource "azurerm_role_assignment" "vm_contributor" {
+  scope                = "/subscriptions/${var.subscription_id}"
+  role_definition_name = "Virtual Machine Contributor"
+  principal_id         = azuread_group.azure_vm_contributors.object_id
 }
