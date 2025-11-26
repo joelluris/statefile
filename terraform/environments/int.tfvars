@@ -727,7 +727,7 @@ admin_group_object_ids = ["1c1de890-2a46-4597-8f88-0e26161cf9a2"]
 #===============================================================================
 windows_vms = {
   win-vm1 = {
-    resource_group_name = "rg-lnt-eip-mft-nonprd-uaen-01"
+    resource_group_name = "rg-lnt-eip-vm-nonprd-uaen-01"
     location            = "UAE North"
     subnet_id           = "vn1.sn5" # snet-lnt-eip-vm-nonprd-uaen-01
     vm_name             = "vm-lnt-wvm1-np1"
