@@ -325,8 +325,6 @@ variable "acr" {
     sku                           = string
     admin_enabled                 = bool
     public_network_access_enabled = bool
-    public_network_access_enabled = bool
-    admin_enabled                 = bool
     tags                          = map(string)
   }))
   default = {}
