@@ -650,7 +650,6 @@ acr = {
     sku                           = "Basic"
     admin_enabled                 = false
     public_network_access_enabled = true
-    sku                           = "Premium"
     admin_enabled                 = false
     public_network_access_enabled = false
     subnet_ids                    = "vn1.sn3" # ND subnet key for ACR

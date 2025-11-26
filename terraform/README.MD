@@ -137,3 +137,6 @@ terraform plan -var-file="environments/int.tfvars" | Select-String -Pattern "azu
 
 # Find all Key Vault related changes
 terraform plan -var-file="environments/int.tfvars" | Select-String -Pattern "module\.KeyVault|azurerm_key_vault"
+
+# target only a specific resources pointing to the tfvars
+terraform apply -var-file='environments/int.tfvars' -target='module.automation_account.azurerm_automation_runbook.runbook["stop_resources"]'
