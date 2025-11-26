@@ -647,15 +647,12 @@ acr = {
     name                          = "acrlnteipnonprd01"
     resource_group_name           = "rg-lnt-eip-nonprd-uaen-01"
     location                      = "UAE North"
-<<<<<<< HEAD
     sku                           = "Basic"
     admin_enabled                 = false
     public_network_access_enabled = true
-=======
     sku                           = "Premium"
     admin_enabled                 = false
     public_network_access_enabled = false
->>>>>>> be06e0de028db49f94e868d0c4321824e633a283
     subnet_ids                    = "vn1.sn3" # ND subnet key for ACR
     tags = {
       "Application Owner"    = "IT"
