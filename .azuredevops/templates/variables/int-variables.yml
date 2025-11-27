@@ -2,7 +2,7 @@
 
 variables:
   - name: SUBSCRIPTION_ID_int
-    value: '43731ed3-ead8-4406-b85d-18e966dfdb9f'
+    value: '188328be-2d52-49e5-8e3a-2d0a6712d4ec'
   
   - name: ENVIRONMENT_NAME
     value: 'int'

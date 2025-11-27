@@ -1,7 +1,7 @@
 # Authentication variables (for local testing only - pipeline adds these dynamically)
 # Comment out when running in pipeline
-tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
-subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
+# tenant_id       = "7d1a04ec-981a-405a-951b-dd2733120e4c"
+# subscription_id = "43731ed3-ead8-4406-b85d-18e966dfdb9f"
 
 management_subscription_id        = "42dedbdb-3ad0-438c-a796-66bb1c08686a"
 log_analytics_workspace_name      = "law-management-uaenorth"

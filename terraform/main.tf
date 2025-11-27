@@ -6,6 +6,7 @@ module "ResourceGroup" {
   all_resource_groups = var.all_resource_groups
 }
 
+/*
 module "VirtualNetwork" {
   # providers = {
   #   azurerm.LUNATE-SHARED_SERVICES = azurerm.LUNATE-SHARED_SERVICES
@@ -256,3 +257,5 @@ module "postgresql" {
 
   depends_on = [module.ResourceGroup, module.VirtualNetwork, module.KeyVault]
 }
+
+*/
