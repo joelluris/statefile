@@ -1,0 +1,306 @@
+name: Terraform State File Check Pipeline
+
+trigger: none
+
+parameters:
+- name: environment
+  displayName: "Environment to Check"
+  type: string
+  default: int
+  values:
+  - int
+  - dev
+  - stg
+  - prd
+
+variables:
+- template: ../templates/variables/common-variables.yml
+- template: ../templates/variables/backend-variables.yml
+- ${{ if eq(parameters.environment, 'dev') }}:
+  - template: ../templates/variables/dev-variables.yml
+- ${{ if eq(parameters.environment, 'stg') }}:
+  - template: ../templates/variables/stg-variables.yml
+- ${{ if eq(parameters.environment, 'prd') }}:
+  - template: ../templates/variables/prd-variables.yml
+- ${{ if eq(parameters.environment, 'int') }}:
+  - template: ../templates/variables/int-variables.yml
+
+pool:
+  name: WSL-Agent
+  demands:
+  - Agent.Name -equals Dell-Predator-G15-5530
+
+stages:
+- stage: StateFileCheck
+  displayName: "Terraform State File Validation"
+  jobs:
+  - job: CheckStateFile
+    displayName: "Check State File Health"
+    steps:
+      - checkout: self
+
+      - script: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y curl jq
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"
+
+      - script: |
+          set +x
+          if [ ! -f "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars" ]; then
+            echo "ERROR: environments/${{ parameters.environment }}.tfvars does not exist"
+            exit 1
+          fi
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+        displayName: "Append Auth Variables to tfvars"
+
+      # Terraform Init
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            terraform init \
+              -backend-config="subscription_id=$(SUBSCRIPTION_ID_BACKEND)" \
+              -backend-config="resource_group_name=$(TF_STORAGE_RESOURCE_GROUP)" \
+              -backend-config="storage_account_name=$(TF_STORAGE_ACCOUNT_NAME)" \
+              -backend-config="container_name=$(TF_CONTAINER_NAME)" \
+              -backend-config="key=${{ parameters.environment }}.tfstate" \
+              -backend-config="use_azuread_auth=true" \
+              -reconfigure
+
+      # Check State File Exists
+      - task: AzureCLI@2
+        displayName: "Check State File Exists in Storage"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            
+            echo "Checking if state file exists..."
+            if az storage blob exists \
+              --account-name $(TF_STORAGE_ACCOUNT_NAME) \
+              --container-name $(TF_CONTAINER_NAME) \
+              --name "${{ parameters.environment }}.tfstate" \
+              --auth-mode login \
+              --query "exists" -o tsv | grep -q "true"; then
+              echo "✓ State file exists: ${{ parameters.environment }}.tfstate"
+            else
+              echo "✗ State file NOT found: ${{ parameters.environment }}.tfstate"
+              exit 1
+            fi
+
+      # Show State File Metadata
+      - task: AzureCLI@2
+        displayName: "Show State File Metadata"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            
+            echo "State File Metadata:"
+            az storage blob show \
+              --account-name $(TF_STORAGE_ACCOUNT_NAME) \
+              --container-name $(TF_CONTAINER_NAME) \
+              --name "${{ parameters.environment }}.tfstate" \
+              --auth-mode login \
+              --query "{Name:name, Size:properties.contentLength, LastModified:properties.lastModified, ContentMD5:properties.contentSettings.contentMd5}" \
+              -o table
+
+      # List Resources in State
+      - task: AzureCLI@2
+        displayName: "List Resources in State"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Resources managed in state file:"
+            terraform state list | tee state-resources.txt
+            
+            RESOURCE_COUNT=$(terraform state list | wc -l)
+            echo ""
+            echo "Total resources: $RESOURCE_COUNT"
+
+      # Show State File Statistics
+      - task: AzureCLI@2
+        displayName: "Show State Statistics"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Analyzing state file..."
+            terraform show -json | jq -r '
+              "=== Terraform State Statistics ===",
+              "Terraform Version: " + .terraform_version,
+              "Serial: " + (.serial | tostring),
+              "",
+              "=== Resource Type Breakdown ===",
+              (.values.root_module.resources // [] | group_by(.type) | map({type: .[0].type, count: length}) | .[] | "\(.type): \(.count)"),
+              "",
+              "=== Module Summary ===",
+              (if .values.root_module.child_modules then
+                (.values.root_module.child_modules | map(.address) | .[] | "Module: " + .)
+              else
+                "No child modules"
+              end)
+            '
+
+      # Validate State Integrity
+      - task: AzureCLI@2
+        displayName: "Validate State Integrity"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Running terraform validate..."
+            terraform validate
+            
+            echo ""
+            echo "Checking for drift (terraform plan)..."
+            terraform plan \
+              -var-file="environments/${{ parameters.environment }}.tfvars" \
+              -detailed-exitcode \
+              -input=false \
+              -out=drift-check.tfplan || PLAN_EXIT_CODE=$?
+            
+            if [ "${PLAN_EXIT_CODE:-0}" -eq 0 ]; then
+              echo "✓ No changes detected - infrastructure matches state"
+            elif [ "${PLAN_EXIT_CODE:-0}" -eq 2 ]; then
+              echo "⚠ Drift detected - infrastructure differs from state"
+              terraform show -no-color drift-check.tfplan
+              exit 0  # Don't fail the pipeline for drift detection
+            else
+              echo "✗ Plan failed with error"
+              exit 1
+            fi
+
+      # Check for Orphaned Resources
+      - task: AzureCLI@2
+        displayName: "Check for Tainted Resources"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Checking for tainted resources..."
+            TAINTED=$(terraform show -json | jq -r '
+              .values.root_module.resources // [] | 
+              map(select(.tainted == true)) | 
+              if length > 0 then
+                .[] | "⚠ Tainted: " + .address
+              else
+                "✓ No tainted resources found"
+              end
+            ')
+            echo "$TAINTED"
+
+      # Generate State Report
+      - task: AzureCLI@2
+        displayName: "Generate State Report"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            
+            cat > state-report.md <<'EOF'
+            # Terraform State File Report
+            
+            **Environment:** ${{ parameters.environment }}
+            **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            **Pipeline:** $(Build.DefinitionName)
+            **Build:** $(Build.BuildNumber)
+            
+            ## State File Information
+            
+            - **Storage Account:** $(TF_STORAGE_ACCOUNT_NAME)
+            - **Container:** $(TF_CONTAINER_NAME)
+            - **State File:** ${{ parameters.environment }}.tfstate
+            
+            ## Resources in State
+            
+            \`\`\`
+            EOF
+            
+            terraform state list >> state-report.md
+            
+            cat >> state-report.md <<'EOF'
+            \`\`\`
+            
+            ## Resource Count by Type
+            
+            \`\`\`
+            EOF
+            
+            terraform state list | sed 's/\[.*\]//' | sed 's/\..*$//' | sort | uniq -c | sort -rn >> state-report.md
+            
+            echo '```' >> state-report.md
+            
+            echo "State report generated successfully"
+            cat state-report.md
+
+      # Publish Artifacts
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish State Resources List"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/state-resources.txt"
+          artifact: "state-resources-${{ parameters.environment }}"
+          publishLocation: "pipeline"
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish State Report"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/state-report.md"
+          artifact: "state-report-${{ parameters.environment }}"
+          publishLocation: "pipeline"
