@@ -75,7 +75,7 @@ stages:
           resource_group_name  = "$(TF_STORAGE_RESOURCE_GROUP)"
           storage_account_name = "$(TF_STORAGE_ACCOUNT_NAME)"
           container_name       = "$(TF_CONTAINER_NAME)"
-          key                  = "${{ parameters.environment }}.tfstate"
+          key                  = "$statefile-{{ parameters.environment }}.tfstate"
           use_azuread_auth     = true
           EOF
         displayName: "Write Backend Configuration"
