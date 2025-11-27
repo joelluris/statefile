@@ -106,22 +106,6 @@ stages:
             export ARM_TENANT_ID=$(TENANT_ID)
             export TF_IN_AUTOMATION=1
             
-            # Retry terraform init up to 3 times
-            for i in 1 2 3; do
-              echo "Terraform init attempt $i of 3..."
-              if terraform init -backend-config=backend.tfvars -reconfigure; then
-                echo "Terraform init succeeded"
-                break
-              else
-                if [ $i -eq 3 ]; then
-                  echo "Terraform init failed after 3 attempts"
-                  exit 1
-                fi
-                echo "Waiting 10 seconds before retry..."
-                sleep 10
-              fi
-            done
-
       # Terraform Validate
       - task: AzureCLI@2
         displayName: "Terraform Validate"
