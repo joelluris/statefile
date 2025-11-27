@@ -1,0 +1,153 @@
+name: List State File Resources
+
+trigger: none
+
+parameters:
+- name: environment
+  displayName: "Environment"
+  type: string
+  default: int
+  values:
+  - int
+  - dev
+  - stg
+  - prd
+
+variables:
+- template: ../templates/variables/common-variables.yml
+- template: ../templates/variables/backend-variables.yml
+- ${{ if eq(parameters.environment, 'dev') }}:
+  - template: ../templates/variables/dev-variables.yml
+- ${{ if eq(parameters.environment, 'stg') }}:
+  - template: ../templates/variables/stg-variables.yml
+- ${{ if eq(parameters.environment, 'prd') }}:
+  - template: ../templates/variables/prd-variables.yml
+- ${{ if eq(parameters.environment, 'int') }}:
+  - template: ../templates/variables/int-variables.yml
+
+pool:
+  name: WSL-Agent
+  demands:
+  - Agent.Name -equals Dell-Predator-G15-5530
+
+stages:
+- stage: ListResources
+  displayName: "List Resources in Terraform State"
+  jobs:
+  - job: ListResources
+    displayName: "List All Resources"
+    steps:
+      - checkout: self
+
+      - script: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y curl
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"
+
+      - script: |
+          set +x
+          if [ ! -f "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars" ]; then
+            echo "ERROR: environments/${{ parameters.environment }}.tfvars does not exist"
+            exit 1
+          fi
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+        displayName: "Append Auth Variables to tfvars"
+
+      # Terraform Init
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            terraform init \
+              -backend-config="subscription_id=$(SUBSCRIPTION_ID_BACKEND)" \
+              -backend-config="resource_group_name=$(TF_STORAGE_RESOURCE_GROUP)" \
+              -backend-config="storage_account_name=$(TF_STORAGE_ACCOUNT_NAME)" \
+              -backend-config="container_name=$(TF_CONTAINER_NAME)" \
+              -backend-config="key=statefile-${{ parameters.environment }}.tfstate" \
+              -backend-config="use_azuread_auth=true" \
+              -reconfigure
+
+      # List Current Resources
+      - task: AzureCLI@2
+        displayName: "List Current Resources in State"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Current resources in state:"
+            terraform state list
+            
+            echo ""
+            echo "Total resources: $(terraform state list | wc -l)"
+
+      # Generate Resource List Report
+      - task: AzureCLI@2
+        displayName: "Generate Resource List Report"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            
+            cat > resource-list.md <<EOF
+            # Terraform State Resources List
+            
+            **Environment:** ${{ parameters.environment }}
+            **State File:** statefile-${{ parameters.environment }}.tfstate
+            **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            **Pipeline:** $(Build.DefinitionName)
+            **Build:** $(Build.BuildNumber)
+            
+            ## All Resources in State
+            
+            \`\`\`
+            EOF
+            
+            terraform state list >> resource-list.md
+            echo '```' >> resource-list.md
+            
+            echo ""
+            echo "## Resource Count by Type" >> resource-list.md
+            echo "" >> resource-list.md
+            echo '```' >> resource-list.md
+            terraform state list | sed 's/\[.*\]//' | sed 's/\..*$//' | sort | uniq -c | sort -rn >> resource-list.md
+            echo '```' >> resource-list.md
+            
+            echo ""
+            cat resource-list.md
+
+      # Publish Artifacts
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Resource List"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/resource-list.md"
+          artifact: "resource-list-${{ parameters.environment }}"
+          publishLocation: "pipeline"

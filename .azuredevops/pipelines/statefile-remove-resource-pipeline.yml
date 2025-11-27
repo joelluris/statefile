@@ -104,26 +104,6 @@ stages:
               -backend-config="use_azuread_auth=true" \
               -reconfigure
 
-      # List Current Resources
-      - task: AzureCLI@2
-        displayName: "List Current Resources in State"
-        inputs:
-          azureSubscription: "svc-enterprise-integrations"
-          scriptType: "bash"
-          scriptLocation: "inlineScript"
-          workingDirectory: "$(Build.SourcesDirectory)/terraform"
-          inlineScript: |
-            set -e
-            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
-            export ARM_TENANT_ID=$(TENANT_ID)
-            export TF_IN_AUTOMATION=1
-            
-            echo "Current resources in state:"
-            terraform state list
-            
-            echo ""
-            echo "Total resources: $(terraform state list | wc -l)"
-
       # Verify Resource Exists
       - task: AzureCLI@2
         displayName: "Verify Resource Exists in State"
@@ -139,6 +119,7 @@ stages:
             
             RESOURCE="${{ parameters.resourceAddress }}"
             
+            echo "Checking if resource exists in state..."
             if terraform state list | grep -qF "$RESOURCE"; then
               echo "✓ Resource found in state: $RESOURCE"
             else
@@ -151,7 +132,7 @@ stages:
 
       # Show Resource Details Before Removal
       - task: AzureCLI@2
-        displayName: "Show Resource Details"
+        displayName: "Show Resource Details Before Removal"
         inputs:
           azureSubscription: "svc-enterprise-integrations"
           scriptType: "bash"
@@ -163,7 +144,8 @@ stages:
             export TF_IN_AUTOMATION=1
             
             echo "Resource details before removal:"
-            terraform state show "${{ parameters.resourceAddress }}" || true
+            echo "================================"
+            terraform state show "${{ parameters.resourceAddress }}" | tee resource-before-removal.txt || true
 
       # Remove Resource from State
       - task: AzureCLI@2
@@ -182,13 +164,17 @@ stages:
             RESOURCE="${{ parameters.resourceAddress }}"
             
             echo "Removing resource from state: $RESOURCE"
+            echo "========================================"
             terraform state rm "$RESOURCE"
             
             echo ""
             echo "✓ Resource removed successfully from state file"
             echo ""
-            echo "⚠ NOTE: The actual Azure resource still exists and has NOT been deleted."
-            echo "   Only the Terraform state tracking has been removed."
+            echo "⚠️  IMPORTANT NOTES:"
+            echo "   - The actual Azure resource still exists and has NOT been deleted"
+            echo "   - Only the Terraform state tracking has been removed"
+            echo "   - Terraform will no longer manage this resource"
+            echo "   - To recreate state tracking, use 'terraform import'"
 
       # List Resources After Removal
       - task: AzureCLI@2
@@ -205,10 +191,12 @@ stages:
             export TF_IN_AUTOMATION=1
             
             echo "Resources remaining in state:"
+            echo "=============================="
             terraform state list | tee remaining-resources.txt
             
+            REMAINING_COUNT=$(terraform state list | wc -l)
             echo ""
-            echo "Total resources remaining: $(terraform state list | wc -l)"
+            echo "Total resources remaining: $REMAINING_COUNT"
 
       # Generate Removal Report
       - task: AzureCLI@2
@@ -229,6 +217,7 @@ stages:
             **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
             **Pipeline:** $(Build.DefinitionName)
             **Build:** $(Build.BuildNumber)
+            **Executed By:** $(Build.RequestedFor)
             
             ## Removed Resource
             
@@ -239,11 +228,13 @@ stages:
             ## Important Notes
             
             - ✓ Resource successfully removed from Terraform state
-            - ⚠ The actual Azure resource still exists (not deleted)
+            - ⚠️  The actual Azure resource still exists (not deleted)
             - ℹ️  Terraform will no longer manage this resource
-            - ℹ️  To recreate state tracking, you must run \`terraform import\`
+            - ℹ️  To recreate state tracking, run: \`terraform import ${{ parameters.resourceAddress }} <resource_id>\`
             
             ## Remaining Resources in State
+            
+            Total Count: $(terraform state list | wc -l)
             
             \`\`\`
             EOF
@@ -255,6 +246,14 @@ stages:
             cat removal-report.md
 
       # Publish Artifacts
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Resource Details Before Removal"
+        condition: always()
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/resource-before-removal.txt"
+          artifact: "resource-before-removal-${{ parameters.environment }}"
+          publishLocation: "pipeline"
+
       - task: PublishPipelineArtifact@1
         displayName: "Publish Remaining Resources List"
         inputs:
