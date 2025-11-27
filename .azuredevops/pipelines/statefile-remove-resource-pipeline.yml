@@ -1,0 +1,270 @@
+name: Remove Resource from State File
+
+trigger: none
+
+parameters:
+- name: environment
+  displayName: "Environment"
+  type: string
+  default: int
+  values:
+  - int
+  - dev
+  - stg
+  - prd
+
+- name: resourceAddress
+  displayName: "Resource Address to Remove (e.g., module.rg.azurerm_resource_group.this)"
+  type: string
+
+- name: confirmRemoval
+  displayName: "Confirm Removal (type 'yes' to proceed)"
+  type: string
+  default: "no"
+
+variables:
+- template: ../templates/variables/common-variables.yml
+- template: ../templates/variables/backend-variables.yml
+- ${{ if eq(parameters.environment, 'dev') }}:
+  - template: ../templates/variables/dev-variables.yml
+- ${{ if eq(parameters.environment, 'stg') }}:
+  - template: ../templates/variables/stg-variables.yml
+- ${{ if eq(parameters.environment, 'prd') }}:
+  - template: ../templates/variables/prd-variables.yml
+- ${{ if eq(parameters.environment, 'int') }}:
+  - template: ../templates/variables/int-variables.yml
+
+pool:
+  name: WSL-Agent
+  demands:
+  - Agent.Name -equals Dell-Predator-G15-5530
+
+stages:
+- stage: RemoveFromState
+  displayName: "Remove Resource from Terraform State"
+  jobs:
+  - job: RemoveResource
+    displayName: "Remove Resource"
+    steps:
+      - checkout: self
+
+      - script: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y curl
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        displayName: "Install Dependencies"
+
+      - task: TerraformInstaller@1
+        displayName: "Install Terraform"
+        inputs:
+          terraformVersion: "$(TERRAFORM_VERSION)"
+
+      # Validate Confirmation
+      - script: |
+          if [ "${{ parameters.confirmRemoval }}" != "yes" ]; then
+            echo "❌ Removal not confirmed. Please set 'Confirm Removal' to 'yes' to proceed."
+            exit 1
+          fi
+          echo "✓ Removal confirmed"
+        displayName: "Validate Confirmation"
+
+      - script: |
+          set +x
+          if [ ! -f "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars" ]; then
+            echo "ERROR: environments/${{ parameters.environment }}.tfvars does not exist"
+            exit 1
+          fi
+          {
+            echo 'tenant_id       = "$(TENANT_ID)"'
+            echo 'subscription_id = "$(SUBSCRIPTION_ID_${{ parameters.environment }})"'
+          } >> "$(Build.SourcesDirectory)/terraform/environments/${{ parameters.environment }}.tfvars"
+        displayName: "Append Auth Variables to tfvars"
+
+      # Terraform Init
+      - task: AzureCLI@2
+        displayName: "Terraform Init"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            terraform init \
+              -backend-config="subscription_id=$(SUBSCRIPTION_ID_BACKEND)" \
+              -backend-config="resource_group_name=$(TF_STORAGE_RESOURCE_GROUP)" \
+              -backend-config="storage_account_name=$(TF_STORAGE_ACCOUNT_NAME)" \
+              -backend-config="container_name=$(TF_CONTAINER_NAME)" \
+              -backend-config="key=statefile-${{ parameters.environment }}.tfstate" \
+              -backend-config="use_azuread_auth=true" \
+              -reconfigure
+
+      # List Current Resources
+      - task: AzureCLI@2
+        displayName: "List Current Resources in State"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Current resources in state:"
+            terraform state list
+            
+            echo ""
+            echo "Total resources: $(terraform state list | wc -l)"
+
+      # Verify Resource Exists
+      - task: AzureCLI@2
+        displayName: "Verify Resource Exists in State"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            RESOURCE="${{ parameters.resourceAddress }}"
+            
+            if terraform state list | grep -qF "$RESOURCE"; then
+              echo "✓ Resource found in state: $RESOURCE"
+            else
+              echo "❌ Resource NOT found in state: $RESOURCE"
+              echo ""
+              echo "Available resources:"
+              terraform state list
+              exit 1
+            fi
+
+      # Show Resource Details Before Removal
+      - task: AzureCLI@2
+        displayName: "Show Resource Details"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Resource details before removal:"
+            terraform state show "${{ parameters.resourceAddress }}" || true
+
+      # Remove Resource from State
+      - task: AzureCLI@2
+        displayName: "Remove Resource from State"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            RESOURCE="${{ parameters.resourceAddress }}"
+            
+            echo "Removing resource from state: $RESOURCE"
+            terraform state rm "$RESOURCE"
+            
+            echo ""
+            echo "✓ Resource removed successfully from state file"
+            echo ""
+            echo "⚠ NOTE: The actual Azure resource still exists and has NOT been deleted."
+            echo "   Only the Terraform state tracking has been removed."
+
+      # List Resources After Removal
+      - task: AzureCLI@2
+        displayName: "List Resources After Removal"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            az account set --subscription $(SUBSCRIPTION_ID_BACKEND)
+            export ARM_TENANT_ID=$(TENANT_ID)
+            export TF_IN_AUTOMATION=1
+            
+            echo "Resources remaining in state:"
+            terraform state list | tee remaining-resources.txt
+            
+            echo ""
+            echo "Total resources remaining: $(terraform state list | wc -l)"
+
+      # Generate Removal Report
+      - task: AzureCLI@2
+        displayName: "Generate Removal Report"
+        inputs:
+          azureSubscription: "svc-enterprise-integrations"
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          workingDirectory: "$(Build.SourcesDirectory)/terraform"
+          inlineScript: |
+            set -e
+            
+            cat > removal-report.md <<EOF
+            # Terraform State Resource Removal Report
+            
+            **Environment:** ${{ parameters.environment }}
+            **State File:** statefile-${{ parameters.environment }}.tfstate
+            **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            **Pipeline:** $(Build.DefinitionName)
+            **Build:** $(Build.BuildNumber)
+            
+            ## Removed Resource
+            
+            \`\`\`
+            ${{ parameters.resourceAddress }}
+            \`\`\`
+            
+            ## Important Notes
+            
+            - ✓ Resource successfully removed from Terraform state
+            - ⚠ The actual Azure resource still exists (not deleted)
+            - ℹ️  Terraform will no longer manage this resource
+            - ℹ️  To recreate state tracking, you must run \`terraform import\`
+            
+            ## Remaining Resources in State
+            
+            \`\`\`
+            EOF
+            
+            terraform state list >> removal-report.md
+            echo '```' >> removal-report.md
+            
+            echo ""
+            cat removal-report.md
+
+      # Publish Artifacts
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Remaining Resources List"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/remaining-resources.txt"
+          artifact: "remaining-resources-${{ parameters.environment }}"
+          publishLocation: "pipeline"
+
+      - task: PublishPipelineArtifact@1
+        displayName: "Publish Removal Report"
+        inputs:
+          targetPath: "$(Build.SourcesDirectory)/terraform/removal-report.md"
+          artifact: "removal-report-${{ parameters.environment }}"
+          publishLocation: "pipeline"
