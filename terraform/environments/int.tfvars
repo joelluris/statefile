@@ -30,22 +30,6 @@ all_resource_groups = {
       "Environment"          = "Integration"
     }
   }
-  rg3 = {
-    name = "rg-lnt-eip-nonprd-uaen-01" # This RG is for resources that  has private endpoints like Key Vault, Storage Account etc.
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integration"
-    }
-  }
-  rg4 = {
-    name = "rg-lnt-eip-mft-nonprd-uaen-01"
-    tags = {
-      "Application Owner"    = "IT"
-      "Business Criticality" = "Essential"
-      "Environment"          = "Integration"
-    }
-  }
 }
 
 #===============================================================================
