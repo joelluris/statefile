@@ -82,7 +82,7 @@ stages:
               -backend-config="resource_group_name=$(TF_STORAGE_RESOURCE_GROUP)" \
               -backend-config="storage_account_name=$(TF_STORAGE_ACCOUNT_NAME)" \
               -backend-config="container_name=$(TF_CONTAINER_NAME)" \
-              -backend-config="key=${{ parameters.environment }}.tfstate" \
+              -backend-config="key=$statefile-${{ parameters.environment }}.tfstate" \
               -backend-config="use_azuread_auth=true" \
               -reconfigure
 
@@ -101,12 +101,12 @@ stages:
             if az storage blob exists \
               --account-name $(TF_STORAGE_ACCOUNT_NAME) \
               --container-name $(TF_CONTAINER_NAME) \
-              --name "${{ parameters.environment }}.tfstate" \
+              --name "$statefile-${{ parameters.environment }}.tfstate" \
               --auth-mode login \
               --query "exists" -o tsv | grep -q "true"; then
-              echo "✓ State file exists: ${{ parameters.environment }}.tfstate"
+              echo "✓ State file exists: $statefile-${{ parameters.environment }}.tfstate"
             else
-              echo "✗ State file NOT found: ${{ parameters.environment }}.tfstate"
+              echo "✗ State file NOT found: $statefile-${{ parameters.environment }}.tfstate"
               exit 1
             fi
 
@@ -125,7 +125,7 @@ stages:
             az storage blob show \
               --account-name $(TF_STORAGE_ACCOUNT_NAME) \
               --container-name $(TF_CONTAINER_NAME) \
-              --name "${{ parameters.environment }}.tfstate" \
+              --name "$statefile-${{ parameters.environment }}.tfstate" \
               --auth-mode login \
               --query "{Name:name, Size:properties.contentLength, LastModified:properties.lastModified, ContentMD5:properties.contentSettings.contentMd5}" \
               -o table
@@ -266,7 +266,7 @@ stages:
             
             - **Storage Account:** $(TF_STORAGE_ACCOUNT_NAME)
             - **Container:** $(TF_CONTAINER_NAME)
-            - **State File:** ${{ parameters.environment }}.tfstate
+            - **State File:** $statefile-${{ parameters.environment }}.tfstate
             
             ## Resources in State
             
