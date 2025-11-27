@@ -16,9 +16,6 @@ parameters:
   type: string
   default: int
   values:
-  - dev
-  - stg
-  - prd
   - int
 
 variables:
